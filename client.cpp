@@ -22,10 +22,16 @@ ulong_t __stdcall Client::init( void* arg ) {
 
 void Client::DrawHUD( ) {
 	static const std::string text = "ambien recode | debug";
-	render::FontSize_t size = render::hud.size( text );
+	render::FontSize_t size = render::norm.size( text );
+	Color menu = g_gui.m_color;
 
-	// text.
-	render::esp.string(  3, 3, g_gui.m_color, text, render::ALIGN_LEFT );
+
+// background
+	render::rect_outlined(m_width - size.m_width - 20, 10, size.m_width + 10, size.m_height + 2, { menu.r(), menu.g(), menu.b(), 90 }, false);
+	render::gradient(m_width - size.m_width - 20, 10, size.m_width + 10, size.m_height + 2, { menu.r(), menu.g(), menu.b(), 90 }, { menu.r(), menu.g(), menu.b(), 20 }, false);
+	
+// text
+	render::norm.string(m_width - 15, 10, { 255, 255, 255, 150 }, text, render::ALIGN_RIGHT);
 }
 
 void Client::KillFeed( ) {
