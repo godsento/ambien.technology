@@ -657,16 +657,14 @@ void Aimbot::find() {
 
 			// write data, needed for traces / etc.
 			m_record->cache();
-
-			bool hit = CheckHitchance(m_target, m_angle);
-			//bool hit = on && CanHitchance( m_angle, m_aim, m_target, g_menu.main.aimbot.hitchance_amount.get( ), m_hitbox, m_damage );
-
+			bool on = g_menu.main.aimbot.hitchance_auto.get() && g_menu.main.config.mode.get() == 0;
+			bool hit = on && CheckHitchance(m_target, m_angle);
 			// set autostop shit.
 			if ((g_cl.m_local->m_fFlags() & FL_ONGROUND) && !on_land) {
 				// since we stop when fakewalking when choke limit is reached.
 				if (!g_input.GetKeyState(g_menu.main.misc.fakewalk.get())) {
 					// set this, if we arent jumping.
-					m_stop = !(g_cl.m_buttons & IN_JUMP);
+					//m_stop = !(g_cl.m_buttons & IN_JUMP);
 				}
 			}
 			if (hit) {
@@ -683,13 +681,12 @@ void Aimbot::find() {
 				}
 
 				// hitchance fail.
-				else if (g_menu.main.aimbot.zoom.get() == 2 && !hit) {
+				else if (g_menu.main.aimbot.zoom.get() == 2 && on && !hit) {
 					g_cl.m_cmd->m_buttons |= IN_ATTACK2;
 					return;
 				}
 			}
-
-			if (hit) {
+			if (hit || !on) {
 				// right click attack.
 				if (g_menu.main.config.mode.get() == 1 && g_cl.m_weapon_id == REVOLVER)
 					g_cl.m_cmd->m_buttons |= IN_ATTACK2;
