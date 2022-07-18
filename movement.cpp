@@ -434,35 +434,94 @@ void Movement::FixMove( CUserCmd *cmd, const ang_t &wish_angles ) {
 			cmd->m_buttons |= IN_MOVELEFT;
 	}
 }
-void Movement::AutoStop() {
-	if (g_cl.m_weapon_id == ZEUS || g_movement.hasShot)
+
+void ClampMovementSpeed(float speed) {
+	float final_speed = speed;
+
+	if (!g_cl.m_cmd || !g_cl.m_processing)
 		return;
 
-	if (g_aimbot.m_stop && g_cl.m_ground) {
-		if (g_cl.m_local->m_vecVelocity().length() > 15.f) {
-			vec3_t Velocity = g_cl.m_local->m_vecVelocity();
+	g_cl.m_cmd->m_buttons |= IN_SPEED;
 
-			static float Speed = 450.f;
+	float squirt = std::sqrtf((g_cl.m_cmd->m_forward_move * g_cl.m_cmd->m_forward_move) + (g_cl.m_cmd->m_side_move * g_cl.m_cmd->m_side_move));
 
-			ang_t Direction;
-			ang_t RealView = g_cl.m_cmd->m_view_angles;
+	if (squirt > speed) {
+		float squirt2 = std::sqrtf((g_cl.m_cmd->m_forward_move * g_cl.m_cmd->m_forward_move) + (g_cl.m_cmd->m_side_move * g_cl.m_cmd->m_side_move));
 
-			math::VectorAngles(Velocity, Direction);
-			Direction.y = RealView.y - Direction.y;
+		float cock1 = g_cl.m_cmd->m_forward_move / squirt2;
+		float cock2 = g_cl.m_cmd->m_side_move / squirt2;
 
-			vec3_t Forward;
-			math::AngleVectors(Direction, &Forward);
-			vec3_t NegativeDirection = Forward * -Speed;
+		auto Velocity = g_cl.m_local->m_vecVelocity().length_2d();
 
-			g_cl.m_cmd->m_forward_move = NegativeDirection.x;
-			g_cl.m_cmd->m_side_move = NegativeDirection.y;
+		if (final_speed + 1.0 <= Velocity) {
+			g_cl.m_cmd->m_forward_move = 0;
+			g_cl.m_cmd->m_side_move = 0;
 		}
 		else {
-			g_cl.m_cmd->m_forward_move = 0.f;
-			g_cl.m_cmd->m_side_move = 0.f;
+			g_cl.m_cmd->m_forward_move = cock1 * final_speed;
+			g_cl.m_cmd->m_side_move = cock2 * final_speed;
 		}
 	}
 }
+
+void Movement::AutoStop() {
+	if (!g_cl.m_cmd || !g_cl.m_local || !g_cl.m_local->alive())
+		return;
+
+	// don't fake movement while noclipping or on ladders..
+	if (!g_cl.m_weapon || g_cl.m_local->m_MoveType() == MOVETYPE_NOCLIP || g_cl.m_local->m_MoveType() == MOVETYPE_LADDER)
+		return;
+
+	if (!(g_cl.m_local->m_fFlags() & FL_ONGROUND))
+		return;
+
+	if (g_cl.m_cmd->m_buttons & IN_JUMP || !g_aimbot.m_stop)
+		return;
+
+	if (!g_cl.m_weapon_info)
+		return;
+
+	auto max_speed = 0.33f * (g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed);
+
+	g_aimbot.m_stop = false;
+
+	if (g_cl.m_ground [XOR("fakewalk")]) {
+		if (g_cl.m_local->m_vecVelocity().length_2d() < max_speed) {
+			// get the max possible speed whilest we are still accurate.
+			float flMaxSpeed = g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed;
+			float flDesiredSpeed = (flMaxSpeed * 0.33000001);
+
+			ClampMovementSpeed(flDesiredSpeed);
+		}
+		else {
+			vec3_t Velocity = g_cl.m_local->m_vecVelocity();
+
+			ang_t direction;
+			ang_t real_view = g_cl.m_cmd->m_view_angles;
+
+			math::VectorAngles(Velocity, direction);
+			g_csgo.m_engine->GetViewAngles(real_view);
+
+			direction.y = real_view.y - direction.y;
+
+			vec3_t forward;
+			math::AngleVectors(direction, &forward);
+
+			static auto cl_forwardspeed = g_csgo.m_cvar->FindVar(HASH("cl_forwardspeed"));
+			static auto cl_sidespeed = g_csgo.m_cvar->FindVar(HASH("cl_sidespeed"));
+
+			auto negative_forward_speed = -cl_forwardspeed->GetFloat();
+			auto negative_side_speed = -cl_sidespeed->GetFloat();
+
+			auto negative_forward_direction = forward * negative_forward_speed;
+			auto negative_side_direction = forward * negative_side_speed;
+
+			g_cl.m_cmd->m_forward_move = negative_forward_direction.x;
+			g_cl.m_cmd->m_side_move = negative_side_direction.y;
+		}
+	}
+}
+
 void gotoStart(CUserCmd* cmd)
 {
 	if (!g_cl.m_processing) return;
