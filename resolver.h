@@ -30,7 +30,7 @@ public:
 	LagRecord* FindIdealRecord(AimPlayer* data);
 	LagRecord* FindLastRecord(AimPlayer* data);
 
-	void ResolveBodyUpdates(Player* player, LagRecord* record);
+	void PredictBodyUpdates(Player* player, LagRecord* record);
 	void OnBodyUpdate(Player* player, float value);
 	float GetAwayAngle(LagRecord* record);
 
@@ -44,13 +44,10 @@ public:
 	void ResolveWalk(AimPlayer* data, LagRecord* record);
 	bool FindBestAngle(LagRecord* record, AimPlayer* data);
 	Directions HandleDirections(AimPlayer* data);
+	void anti_freestand(AimPlayer* data, LagRecord* record);
 	void ResolveStand(AimPlayer* data, LagRecord* record);
-	void StandNS(AimPlayer* data, LagRecord* record);
 	void ResolveAir(AimPlayer* data, LagRecord* record);
 
-	float OnetapAntiFreestand(Player* target);
-
-	void AirNS(AimPlayer* data, LagRecord* record);
 	void ResolvePoses(Player* player, LagRecord* record);
 
 public:

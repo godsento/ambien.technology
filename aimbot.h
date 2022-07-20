@@ -71,6 +71,9 @@ public:
 
 	// crazy method
 	float last_delta;
+	float m_shot_time;
+	float m_last_lby_change;
+	bool  m_prefer_body;
 public:
 	void UpdateAnimations(LagRecord* record);
 	void OnNetUpdate(Player* player);

@@ -99,13 +99,14 @@ void CustomEntityListener::OnEntityCreated( Entity *ent ) {
 
 		        // hook this on every player.
 		        g_hooks.m_DoExtraBoneProcessing = vmt->add< Hooks::DoExtraBoneProcessing_t >( Player::DOEXTRABONEPROCESSING, util::force_cast( &Hooks::DoExtraBoneProcessing ) );
+				g_hooks.m_BuildTransformations = vmt->add< Hooks::BuildTransformations_t >(Player::BUILDTRANSFORMATIONS, util::force_cast(&Hooks::BuildTransformations));
+				g_hooks.m_StandardBlendingRules = vmt->add< Hooks::StandardBlendingRules_t >(Player::STANDARDBLENDINGRULES, util::force_cast(&Hooks::StandardBlendingRules));
 
 		        // local gets special treatment.
 		        if( player->index( ) == g_csgo.m_engine->GetLocalPlayer( ) ) {
-					g_hooks.m_CalcView = vmt->add< Hooks::CalcView_t >(270, util::force_cast(&Hooks::CalcView));
+					g_hooks.m_CalcView					= vmt->add< Hooks::CalcView_t >(270, util::force_cast(&Hooks::CalcView));
 		        	g_hooks.m_UpdateClientSideAnimation = vmt->add< Hooks::UpdateClientSideAnimation_t >( Player::UPDATECLIENTSIDEANIMATION, util::force_cast( &Hooks::UpdateClientSideAnimation ) );
                     g_hooks.m_GetActiveWeapon           = vmt->add< Hooks::GetActiveWeapon_t >( Player::GETACTIVEWEAPON, util::force_cast( &Hooks::GetActiveWeapon ) );
-                    g_hooks.m_BuildTransformations      = vmt->add< Hooks::BuildTransformations_t >( Player::BUILDTRANSFORMATIONS, util::force_cast( &Hooks::BuildTransformations ) );
                 }
             }
         }
@@ -143,4 +144,25 @@ void CustomEntityListener::OnEntityDeleted( Entity *ent ) {
 		if( vmt )
 		    vmt->reset( );
 	}
+}
+
+void Hooks::StandardBlendingRules(int a2, int a3, int a4, int a5, int a6)
+{
+
+	// cast thisptr to player ptr.
+	Player* player = (Player*)this;
+
+	if (!player || (player->index() - 1) > 63 || player->index() == g_cl.m_local->index())
+		return g_hooks.m_StandardBlendingRules(this, a2, a3, a4, a5, a6);
+
+	// disable interpolation.
+	if (!(player->m_fEffects() & EF_NOINTERP))
+		player->m_fEffects() |= EF_NOINTERP;
+
+	g_hooks.m_StandardBlendingRules(this, a2, a3, a4, a5, a6);
+
+	// restore interpolation.
+	player->m_fEffects() &= ~EF_NOINTERP;
+
+
 }

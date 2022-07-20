@@ -58,6 +58,9 @@ public:
 	Keybind       baim_key;
 	Keybind		  double_tap;
 
+	Dropdown      auto_stop;
+	Checkbox      auto_stop_between;
+
 public:
 	void init( ) {
 		// title.
@@ -178,22 +181,28 @@ public:
 		norecoil.setup( XOR( "compensate recoil" ), XOR( "norecoil" ) );
 		RegisterElement( &norecoil, 1 );
 
-		hitchance_auto.setup( "", XOR( "hitchance_auto" ), 1.f, 100.f, false, 0, 50.f, 1.f, XOR( L"%" ) );
+		auto_stop.setup(XOR("auto stop"), XOR("autostop"), { XOR("off"), XOR("full"), XOR("minimal") });
+		RegisterElement(&auto_stop, 1);
+
+		auto_stop_between.setup(XOR("auto stop between shots"), XOR("auto_stop_between"));
+		RegisterElement(&auto_stop_between, 1);
+
+		hitchance_auto.setup( "hit chance", XOR( "hitchance_auto" ), 1.f, 100.f, true, 0, 50.f, 1.f, XOR( L"%" ) );
 		hitchance_auto.AddShowCallback( callbacks::IsConfigMM );
 		hitchance_auto.AddShowCallback( callbacks::IsAutoSelected );
 		RegisterElement( &hitchance_auto, 1 );
 
-		hitchance_scout.setup("", XOR("hitchance_scout"), 1.f, 100.f, false, 0, 50.f, 1.f, XOR(L"%"));
+		hitchance_scout.setup("hit chance", XOR("hitchance_scout"), 1.f, 100.f, true, 0, 50.f, 1.f, XOR(L"%"));
 		hitchance_scout.AddShowCallback(callbacks::IsConfigMM);
 		hitchance_scout.AddShowCallback(callbacks::IsScoutSelected);
 		RegisterElement(&hitchance_scout, 1);
 
-		hitchance_awp.setup("", XOR("hitchance_awp"), 1.f, 100.f, false, 0, 50.f, 1.f, XOR(L"%"));
+		hitchance_awp.setup("hit chance", XOR("hitchance_awp"), 1.f, 100.f, true, 0, 50.f, 1.f, XOR(L"%"));
 		hitchance_awp.AddShowCallback(callbacks::IsConfigMM);
 		hitchance_awp.AddShowCallback(callbacks::IsAwpSelected);
 		RegisterElement(&hitchance_awp, 1);
 
-		hitchance_default.setup("", XOR("hitchance_default"), 1.f, 100.f, false, 0, 50.f, 1.f, XOR(L"%"));
+		hitchance_default.setup("hit chance", XOR("hitchance_default"), 1.f, 100.f, true, 0, 50.f, 1.f, XOR(L"%"));
 		hitchance_default.AddShowCallback(callbacks::IsConfigMM);
 		hitchance_default.AddShowCallback(callbacks::IsDefaultSelected);
 		RegisterElement(&hitchance_default, 1);
@@ -204,7 +213,7 @@ public:
 		correct.setup( XOR( "correct anti-aim" ), XOR( "correct" ) );
 		RegisterElement( &correct, 1 );
 
-		baim1.setup( XOR( "prefer body aim" ), XOR( "baim1" ), { XOR( "always" ), XOR( "lethal" ), XOR( "lethal x2" ), XOR( "fake" ), XOR( "in air" ) } );
+		baim1.setup( XOR( "prefer body aim" ), XOR( "baim1" ), { XOR( "always" ), XOR( "fake" ), XOR( "in air" ) } );
 		RegisterElement( &baim1, 1 );
 
 		baim2.setup( XOR( "only body aim" ), XOR( "baim2" ), { XOR( "always" ), XOR( "health" ), XOR( "fake" ), XOR( "in air" ) } );

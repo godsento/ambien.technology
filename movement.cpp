@@ -464,6 +464,53 @@ void ClampMovementSpeed(float speed) {
 	}
 }
 
+void Movement::RotateMovement(CUserCmd* pCmd, ang_t& angOldViewPoint) {
+	vec3_t view_fwd, view_right, view_up, cmd_fwd, cmd_right, cmd_up;
+	math::AngleVectors(angOldViewPoint, &view_fwd, &view_right, &view_up);
+	math::AngleVectors(pCmd->m_view_angles, &cmd_fwd, &cmd_right, &cmd_up);
+
+	const auto v8 = sqrtf((view_fwd.x * view_fwd.x) + (view_fwd.y * view_fwd.y));
+	const auto v10 = sqrtf((view_right.x * view_right.x) + (view_right.y * view_right.y));
+	const auto v12 = sqrtf(view_up.z * view_up.z);
+
+	const vec3_t norm_view_fwd((1.f / v8) * view_fwd.x, (1.f / v8) * view_fwd.y, 0.f);
+	const vec3_t norm_view_right((1.f / v10) * view_right.x, (1.f / v10) * view_right.y, 0.f);
+	const vec3_t norm_view_up(0.f, 0.f, (1.f / v12) * view_up.z);
+
+	const auto v14 = sqrtf((cmd_fwd.x * cmd_fwd.x) + (cmd_fwd.y * cmd_fwd.y));
+	const auto v16 = sqrtf((cmd_right.x * cmd_right.x) + (cmd_right.y * cmd_right.y));
+	const auto v18 = sqrtf(cmd_up.z * cmd_up.z);
+
+	const vec3_t norm_cmd_fwd((1.f / v14) * cmd_fwd.x, (1.f / v14) * cmd_fwd.y, 0.f);
+	const vec3_t norm_cmd_right((1.f / v16) * cmd_right.x, (1.f / v16) * cmd_right.y, 0.f);
+	const vec3_t norm_cmd_up(0.f, 0.f, (1.f / v18) * cmd_up.z);
+
+	const auto v22 = norm_view_fwd.x * pCmd->m_forward_move;
+	const auto v26 = norm_view_fwd.y * pCmd->m_forward_move;
+	const auto v28 = norm_view_fwd.z * pCmd->m_forward_move;
+	const auto v24 = norm_view_right.x * pCmd->m_side_move;
+	const auto v23 = norm_view_right.y * pCmd->m_side_move;
+	const auto v25 = norm_view_right.z * pCmd->m_side_move;
+	const auto v30 = norm_view_up.x * pCmd->m_up_move;
+	const auto v27 = norm_view_up.z * pCmd->m_up_move;
+	const auto v29 = norm_view_up.y * pCmd->m_up_move;
+
+	pCmd->m_forward_move = ((((norm_cmd_fwd.x * v24) + (norm_cmd_fwd.y * v23)) + (norm_cmd_fwd.z * v25))
+		+ (((norm_cmd_fwd.x * v22) + (norm_cmd_fwd.y * v26)) + (norm_cmd_fwd.z * v28)))
+		+ (((norm_cmd_fwd.y * v30) + (norm_cmd_fwd.x * v29)) + (norm_cmd_fwd.z * v27));
+	pCmd->m_side_move = ((((norm_cmd_right.x * v24) + (norm_cmd_right.y * v23)) + (norm_cmd_right.z * v25))
+		+ (((norm_cmd_right.x * v22) + (norm_cmd_right.y * v26)) + (norm_cmd_right.z * v28)))
+		+ (((norm_cmd_right.x * v29) + (norm_cmd_right.y * v30)) + (norm_cmd_right.z * v27));
+	pCmd->m_up_move = ((((norm_cmd_up.x * v23) + (norm_cmd_up.y * v24)) + (norm_cmd_up.z * v25))
+		+ (((norm_cmd_up.x * v26) + (norm_cmd_up.y * v22)) + (norm_cmd_up.z * v28)))
+		+ (((norm_cmd_up.x * v30) + (norm_cmd_up.y * v29)) + (norm_cmd_up.z * v27));
+
+	angOldViewPoint = pCmd->m_view_angles;
+
+	if (g_cl.m_local->m_MoveType() != MOVETYPE_LADDER && g_cl.m_local->m_MoveType() != MOVETYPE_NOCLIP)
+		pCmd->m_buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVERIGHT | IN_MOVELEFT);
+}
+
 void Movement::AutoStop() {
 	if (!g_cl.m_cmd || !g_cl.m_local || !g_cl.m_local->alive())
 		return;
@@ -481,19 +528,40 @@ void Movement::AutoStop() {
 	if (!g_cl.m_weapon_info)
 		return;
 
-	auto max_speed = 0.33f * (g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed);
+	bool can_shoot = g_cl.m_weapon_fire || (g_cl.m_weapon->m_flNextPrimaryAttack() <= g_csgo.m_globals->m_curtime - game::TICKS_TO_TIME(14) && g_tickshift.m_double_tap);
+
+
+	if (!can_shoot && !g_menu.main.aimbot.auto_stop_between.get())
+		return;
+
+
+	if (!g_menu.main.aimbot.auto_stop.get())
+		return;
+
+	auto max_speed = (g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed) / 3;
+
+
+	if (g_menu.main.aimbot.auto_stop.get() == 1)
+		max_speed = 15.f;
 
 	g_aimbot.m_stop = false;
 
-	if (g_cl.m_ground [XOR("fakewalk")]) {
-		if (g_cl.m_local->m_vecVelocity().length_2d() < max_speed) {
+	if (g_cl.m_ground) {
+		if (g_cl.m_local->m_vecVelocity().length_2d() < max_speed)  {
 			// get the max possible speed whilest we are still accurate.
 			float flMaxSpeed = g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed;
-			float flDesiredSpeed = (flMaxSpeed * 0.33000001);
+			float flDesiredSpeed = (max_speed);
+
+			if (g_menu.main.aimbot.auto_stop.get() == 1) {
+				g_cl.m_cmd->m_forward_move = 0.f;
+				g_cl.m_cmd->m_side_move = 0.f;
+				return;
+			}
 
 			ClampMovementSpeed(flDesiredSpeed);
 		}
 		else {
+			/*
 			vec3_t Velocity = g_cl.m_local->m_vecVelocity();
 
 			ang_t direction;
@@ -517,7 +585,29 @@ void Movement::AutoStop() {
 			auto negative_side_direction = forward * negative_side_speed;
 
 			g_cl.m_cmd->m_forward_move = negative_forward_direction.x;
-			g_cl.m_cmd->m_side_move = negative_side_direction.y;
+			g_cl.m_cmd->m_side_move = negative_side_direction.y;*/
+
+			if (g_cl.m_local->m_vecVelocity().length_2d() < 1.f) {
+				g_cl.m_cmd->m_forward_move = 0.f;
+				g_cl.m_cmd->m_side_move = 0.f;
+				return;
+			}
+
+			float accel = g_csgo.m_cvar->FindVar(HASH("sv_accelerate"))->GetFloat();
+			float playerSurfaceFriction = g_cl.m_local->m_surfaceFriction();
+			float max_accelspeed = accel * g_csgo.m_globals->m_interval * max_speed * playerSurfaceFriction;
+
+			if (g_cl.m_local->m_vecVelocity().length_2d() - max_accelspeed <= -1.f)
+				g_cl.m_cmd->m_forward_move = g_cl.m_local->m_vecVelocity().length_2d() / max_accelspeed;
+			else
+				g_cl.m_cmd->m_forward_move = g_csgo.m_cvar->FindVar(HASH("cl_forwardspeed"))->GetFloat();
+
+			g_cl.m_cmd->m_side_move = 0.0f;
+			ang_t move_dir = g_cl.m_strafe_angles;
+
+			float direction = atan2(g_cl.m_local->m_vecVelocity().y, g_cl.m_local->m_vecVelocity().x);
+			move_dir.y = std::remainderf(math::rad_to_deg(direction) + 180.0f, 360.0f);
+			RotateMovement(g_cl.m_cmd, move_dir);
 		}
 	}
 }
@@ -551,7 +641,7 @@ void Movement::AutoPeek( ) {
 		}
 		else
 		{
-			if (g_cl.m_cmd->m_buttons & IN_ATTACK) { hasShot = true; g_aimbot.m_stop = false; }
+			if (g_cl.m_shot) { hasShot = true; g_aimbot.m_stop = false; }
 			if (hasShot)
 			{
 				gotoStart(g_cl.m_cmd);

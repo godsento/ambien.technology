@@ -2,38 +2,52 @@
 #include "shifting.h"
 
 void c_tickshift::handle_doubletap() {
+
 	if (!m_double_tap && m_charged) {
 		m_charge_timer = 0;
-		m_tick_to_shift = 16;
+		m_tick_to_shift = 14;
 	}
+
 	if (!m_double_tap) return;
+
+
+	bool can_shoot = g_cl.m_weapon_fire || g_cl.m_weapon->m_flNextPrimaryAttack() <= g_csgo.m_globals->m_curtime - game::TICKS_TO_TIME(14);
+
 	if (!m_charged) {
 		if (m_charge_timer > game::TIME_TO_TICKS(.5)) { // .5 seconds after shifting, lets recharge
-			m_tick_to_recharge = 16;
+			m_tick_to_recharge = 14;
 		}
 		else {
+
 			if (!g_aimbot.m_target) {
 				m_charge_timer++;
 			}
-			if (g_cl.m_cmd->m_buttons & IN_ATTACK && g_cl.m_weapon_fire) {
+
+			if (g_cl.m_cmd->m_buttons & IN_ATTACK && can_shoot && g_cl.m_weapon_type != WEAPONTYPE_GRENADE) {
 				m_charge_timer = 0;
+				g_movement.AutoStop();
 			}
 		}
 	}
+
 	if (g_input.GetKeyState(g_menu.main.misc.fakewalk.get())) {
 		m_charge_timer = 0;
 		m_charged = false;
 	}
-	if (g_cl.m_cmd->m_buttons & IN_ATTACK && g_cl.m_weapon_fire && m_charged) {
+
+
+	if (g_cl.m_cmd->m_buttons & IN_ATTACK && can_shoot && m_charged && g_cl.m_weapon_type != WEAPONTYPE_GRENADE) {
 		// shot.. lets shift tickbase back so we can dt.
 		m_charge_timer = 0;
 		m_tick_to_shift = 14;
 		m_shift_cmd = g_cl.m_cmd->m_command_number;
 		m_shift_tickbase = g_cl.m_local->m_nTickBase();
+		g_movement.AutoStop();
 		*g_cl.m_packet = false;
 	}
+
 	if (!m_charged) {
-		m_charged_ticks=0;
+		m_charged_ticks = 0;
 	}
 }
 

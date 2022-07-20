@@ -505,10 +505,10 @@ bool penetration::run(PenetrationInput_t* in, PenetrationOutput_t* out) {
 
 				// non-penetrate damage.
 				if (pen == 4)
-					return player_damage >= in->m_damage;
+					return player_damage >= in->m_damage || player_damage >= in->m_target->m_iHealth();
 
 				// penetration damage.
-				return player_damage >= in->m_damage_pen;
+				return player_damage >= in->m_damage_pen || player_damage >= in->m_target->m_iHealth();
 			}
 		}
 

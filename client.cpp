@@ -231,29 +231,7 @@ void Client::StartMove( CUserCmd* cmd ) {
 }
 
 void Client::BackupPlayers( bool restore ) {
-	if( restore ) {
-		// restore stuff.
-		for( int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i ) {
-			Player* player = g_csgo.m_entlist->GetClientEntity< Player* >( i );
-
-			if( !g_aimbot.IsValidTarget( player ) )
-				continue;
-
-			g_aimbot.m_backup[ i - 1 ].restore( player );
-		}
-	}
-
-	else {
-		// backup stuff.
-		for( int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i ) {
-			Player* player = g_csgo.m_entlist->GetClientEntity< Player* >( i );
-
-			if( !g_aimbot.IsValidTarget( player ) )
-				continue;
-
-			g_aimbot.m_backup[ i - 1 ].store( player );
-		}
-	}
+	
 }
 
 void Client::DoMove( ) {

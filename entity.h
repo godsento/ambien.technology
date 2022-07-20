@@ -720,6 +720,12 @@ public:
 		return get< CBoneCache >(g_entoffsets.m_BoneCache);
 	}
 
+
+	__forceinline matrix3x4_t**& m_BoneCache2() {
+		// TODO; sig
+		return get< matrix3x4_t** >(g_entoffsets.m_BoneCache);
+
+	}
 	__forceinline EHANDLE &m_hObserverTarget() {
 		return get< EHANDLE >(g_entoffsets.m_hObserverTarget);
 	}

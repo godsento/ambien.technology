@@ -406,9 +406,6 @@ void LagCompensation::PredictAnimations(CCSGOPlayerAnimState* state, LagRecord* 
 	// update animations.
 	game::UpdateAnimationState(state, record->m_eye_angles);
 
-	// rerun the pose correction cuz we are re-setupping them.
-	g_resolver.ResolvePoses(player, record);
-
 	// get new rotation poses and layers.
 	player->GetPoseParameters(record->m_poses);
 	player->GetAnimLayers(record->m_layers);

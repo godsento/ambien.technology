@@ -1409,6 +1409,45 @@ void Visuals::DrawPlayer(Player* player) {
 		render::esp.string(box.x + box.w / 2, box.y - render::esp.m_size.m_height, clr, name, render::ALIGN_CENTER);
 	}
 
+	if (enemy) {
+		AimPlayer* data = &g_aimbot.m_players[player->index() - 1];
+
+
+		// make sure everything is valid.
+		if (data && data->m_records.size()) {
+			// grab lag record.
+			LagRecord* current = data->m_records.front().get();
+
+
+
+			if (current && current->valid()) {
+
+				std::string resolver_text = "none";
+
+				switch (current->m_mode)
+				{
+				case g_resolver.RESOLVE_LM:
+					resolver_text = "lastmove";
+					break;
+				case g_resolver.RESOLVE_STAND:
+					resolver_text = "stand";
+					break;
+				case g_resolver.RESOLVE_BODY:
+					resolver_text = "update";
+					break;
+				case g_resolver.RESOLVE_WALK:
+					resolver_text = "moving";
+					break;
+				case g_resolver.RESOLVE_AIR:
+					resolver_text = "air";
+					break;
+				}
+
+				render::esp.string(box.x + box.w / 2, box.y - render::esp.m_size.m_height*2, Color(220, 220, 220, low_alpha), resolver_text, render::ALIGN_CENTER);
+			}
+		}
+	}
+
 	// is health esp enabled for this player.
 	bool health_esp = (enemy && g_menu.main.players.health.get());
 
@@ -1444,18 +1483,7 @@ void Visuals::DrawPlayer(Player* player) {
 
 		auto items = g_menu.main.players.flags_enemy.GetActiveIndices();
 		if (!enemy) return;
-		// NOTE FROM NITRO TO DEX -> stop removing my iterator loops, i do it so i dont have to check the size of the vector
-		// with range loops u do that to do that.
-		AimPlayer* data = &g_aimbot.m_players[player->index() - 1];
-		if (data) {
-			flags.push_back({ std::to_string(data->m_update_time), {255, 255, 255, low_alpha} });
-			// ok, lets see if theyre crazy dopium flick :scream:
-			if (data->real_side != 0) {
-				// ok yes we do have a side. hmm
-				flags.push_back({ XOR("APE"), {170, 0, 0, low_alpha} });
 
-			}
-		}
 		for (auto it = items.begin(); it != items.end(); ++it) {
 
 			// money.
@@ -1497,7 +1525,22 @@ void Visuals::DrawPlayer(Player* player) {
 			if (*it == 5 && player->HasC4())
 				flags.push_back({ XOR("B"), { 255, 0, 0, low_alpha } });
 
+
+
 		}
+		/*
+		// NOTE FROM NITRO TO DEX -> stop removing my iterator loops, i do it so i dont have to check the size of the vector
+		// with range loops u do that to do that.
+		AimPlayer* data = &g_aimbot.m_players[player->index() - 1];
+		if (data && data->m_records.size()) {
+			//flags.push_back({ std::to_string(data->m_update_time), {255, 255, 255, low_alpha} });
+			// ok, lets see if theyre crazy dopium flick :scream:
+			if (data->m_records.front() && data->m_records.front().get()->m_retard && data->m_records.front().get()->valid()) {
+				// ok yes we do have a side. hmm
+				flags.push_back({ XOR("RETARD"), { 255, 0, 0, low_alpha} });
+
+			}
+		}*/
 
 		int  offset{ 0 };
 
@@ -1505,15 +1548,18 @@ void Visuals::DrawPlayer(Player* player) {
 		if (enemy && g_menu.main.players.lby_update.get()) {
 			AimPlayer* data = &g_aimbot.m_players[player->index() - 1];
 
+
+
+
 			// make sure everything is valid.
-			if (data && data->m_moved && data->m_records.size()) {
+			if (data && data->m_records.size()) {
 				// grab lag record.
 				LagRecord* current = data->m_records.front().get();
 
 				if (current) {
 					if (!(current->m_velocity.length_2d() > 0.1 && !current->m_fake_walk) && data->m_body_index <= 3) {
 						// calculate box width
-						float cycle = std::clamp<float>(data->m_body_update - current->m_anim_time, 0.f, 1.0f);
+						float cycle = std::clamp<float>(data->m_body_update - current->m_anim_time, 0.f, 1.1f);
 						float width = (box.w * cycle) / 1.1f;
 
 						if (width > 0.f) {

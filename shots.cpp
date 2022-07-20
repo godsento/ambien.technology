@@ -67,15 +67,41 @@ void Shots::OnFrameStage()
 
 			// get end pos by extending direction forward.
 			// todo; to do this properly should save the weapon range at the moment of the shot, cba..
-			vec3_t end = start + dir * start.dist_to(it->m_record->m_origin) * 6.6f;
+			vec3_t end = start + dir * start.dist_to(it->m_record->m_pred_origin) * 6.6f;
+
+			const vec3_t backup_origin = data->m_player->m_vecOrigin();
+			const vec3_t backup_abs_origin = data->m_player->GetAbsOrigin();
+			const ang_t backup_abs_angles = data->m_player->GetAbsAngles();
+			const vec3_t backup_obb_mins = data->m_player->m_vecMins();
+			const vec3_t backup_obb_maxs = data->m_player->m_vecMaxs();
+			const auto backup_cache = data->m_player->m_BoneCache2();
+
+			auto restore = [&]() -> void {
+				data->m_player->m_vecOrigin() = backup_origin;
+				data->m_player->SetAbsOrigin(backup_abs_origin);
+				data->m_player->SetAbsAngles(backup_abs_angles);
+				data->m_player->m_vecMins() = backup_obb_mins;
+				data->m_player->m_vecMaxs() = backup_obb_maxs;
+				data->m_player->m_BoneCache2() = backup_cache;
+			};
+
+
+			data->m_player->m_vecOrigin() = it->m_record->m_pred_origin;
+			data->m_player->SetAbsOrigin(it->m_record->m_pred_origin);
+			data->m_player->SetAbsAngles(it->m_record->m_abs_ang);
+			data->m_player->m_vecMins() = it->m_record->m_mins;
+			data->m_player->m_vecMaxs() = it->m_record->m_maxs;
+			data->m_player->m_BoneCache2() = reinterpret_cast<matrix3x4_t**>(it->m_record->m_bones);
 
 			if (!g_aimbot.CanHit(start, end, it->m_record, it->m_hitbox, true, it->m_record->m_bones)) {
 				g_notify.add(XOR("missed shot due to spread\n"));
 
+				restore();
 				it = m_shots.erase(it);
-
 				continue;
 			}
+
+			restore();
 
 			size_t mode = it->m_record->m_mode;
 
@@ -103,7 +129,9 @@ void Shots::OnFrameStage()
 
 			else if (mode == Resolver::Modes::RESOLVE_WALK)
 			{
-				data->m_move_index++;
+				if (it->m_record->m_anim_velocity.length() < 40.f)
+					data->m_move_index++;
+
 				g_cl.print(tfm::format(XOR("miss registered | target: %s | backtrack: %i | rmode: %s\n"), info.m_name, game::TIME_TO_TICKS(it->m_record->m_sim_time - it->m_record->m_old_sim_time), "moving"));
 			}
 			else if (mode == Resolver::Modes::RESOLVE_AIR)
@@ -262,57 +290,8 @@ void Shots::OnImpact(IGameEvent* evt) {
 	m_impacts.push_front(impact);
 
 	// no need to keep an insane amount of impacts.
-	while (m_impacts.size() > 128)
+	while (m_impacts.size() > 16)
 		m_impacts.pop_back();
-
-	// nospread mode.
-	if (g_menu.main.config.mode.get() == 1)
-		return;
-
-	// not in nospread mode, see if the shot missed due to spread.
-	Player* target = shot->m_target;
-	if (!target)
-		return;
-
-	// not gonna bother anymore.
-	if (!target->alive())
-		return;
-
-	AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
-	if (!data)
-		return;
-
-	// this record was deleted already.
-	if (!shot->m_record->m_bones)
-		return;
-
-	// we are going to alter this player.
-	// store all his og data.
-	BackupRecord backup;
-	backup.store(target);
-
-	// write historical matrix of the time that we shot
-	// into the games bone cache, so we can trace against it.
-	shot->m_record->cache();
-
-	// start position of trace is where we took the shot.
-	start = shot->m_pos;
-
-	// the impact pos contains the spread from the server
-	// which is generated with the server seed, so this is where the bullet
-	// actually went, compute the direction of this from where the shot landed
-	// and from where we actually took the shot.
-	dir = (pos - start).normalized();
-
-	// get end pos by extending direction forward.
-	// todo; to do this properly should save the weapon range at the moment of the shot, cba..
-	end = start + (dir * 8192.f);
-
-	// intersect our historical matrix with the path the shot took.
-	g_csgo.m_engine_trace->ClipRayToEntity(Ray(start, end), MASK_SHOT, target, &trace);
-
-	// restore player to his original state.
-	backup.restore(target);
 }
 
 void Shots::OnHurt(IGameEvent* evt) {
@@ -511,21 +490,10 @@ void Shots::OnHurt(IGameEvent* evt) {
 	hit.m_group = group;
 	hit.m_damage = damage;
 
-
-
 	m_hits.push_front(hit);
 
-	while (m_hits.size() > 128)
+	while (m_hits.size() > 16)
 		m_hits.pop_back();
-
-	if (!target->alive()) return;
-
-	AimPlayer* data = &g_aimbot.m_players[target->index() - 1];
-	if (!data)
-		return;
-
-	// if we hit head
-	// shoot at this 5 more times.
 }
 
 void Shots::OnFire(IGameEvent* evt)

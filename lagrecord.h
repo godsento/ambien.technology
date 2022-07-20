@@ -14,31 +14,11 @@ public:
 
 public:
 	__forceinline void store( Player* player ) {
-		// get bone cache ptr.
-		CBoneCache* cache = &player->m_BoneCache( );
 
-		// store bone data.
-		m_bones      = cache->m_pCachedBones;
-		m_bone_count = cache->m_CachedBoneCount;
-		m_origin     = player->m_vecOrigin( );
-		m_mins       = player->m_vecMins( );
-		m_maxs       = player->m_vecMaxs( );
-		m_abs_origin = player->GetAbsOrigin( );
-		m_abs_ang    = player->GetAbsAngles( );
 	}
 
 	__forceinline void restore( Player* player ) {
-		// get bone cache ptr.
-		CBoneCache* cache = &player->m_BoneCache( );
-
-		cache->m_pCachedBones    = m_bones;
-		cache->m_CachedBoneCount = m_bone_count;
-
-		player->m_vecOrigin( ) = m_origin;
-		player->m_vecMins( )   = m_mins;
-		player->m_vecMaxs( )   = m_maxs;
-		player->SetAbsAngles( m_abs_ang );
-		player->SetAbsOrigin( m_origin );
+		
 	}
 };
 
@@ -88,17 +68,21 @@ public:
 	bool   m_shot;
 	float  m_away;
 	float  m_anim_time;
+	bool   m_resolved;
 
 	// other stuff.
 	float  m_interp_time;
+	bool   m_retard;
 public:
 
 	// default ctor.
-	__forceinline LagRecord( ) : 
-		m_setup{ false }, 
+	__forceinline LagRecord() :
+		m_setup{ false },
 		m_broke_lc{ false },
-		m_fake_walk{ false }, 
-		m_shot{ false }, 
+		m_fake_walk{ false },
+		m_shot{ false },
+		m_resolved{ false },
+		m_retard{ false },
 		m_lag{}, 
 		m_bones{} {}
 
@@ -108,6 +92,8 @@ public:
 		m_broke_lc{ false },
 		m_fake_walk{ false },
 		m_shot{ false }, 
+		m_resolved{ false },
+		m_retard{ false },
 		m_lag{}, 
 		m_bones{} {
 
@@ -180,18 +166,7 @@ public:
 
 	// function: writes current record to bone cache.
 	__forceinline void cache( ) {
-		// get bone cache ptr.
-		CBoneCache* cache = &m_player->m_BoneCache( );
-
-		cache->m_pCachedBones    = m_bones;
-		cache->m_CachedBoneCount = 128;
-
-		m_player->m_vecOrigin( ) = m_pred_origin;
-		m_player->m_vecMins( )   = m_mins;
-		m_player->m_vecMaxs( )   = m_maxs;
-
-		m_player->SetAbsAngles( m_abs_ang );
-		m_player->SetAbsOrigin( m_pred_origin );
+	
 	}
 
 	__forceinline bool dormant( ) {
@@ -204,6 +179,13 @@ public:
 
 	// function: checks if LagRecord obj is hittable if we were to fire at it now.
 	bool valid( ) {
+
+		if (this->immune())
+			return false;
+
+		if (this->dormant())
+			return false;
+
 		// use prediction curtime for this.
 		float curtime = game::TICKS_TO_TIME( g_cl.m_local->m_nTickBase( ) - g_tickshift.m_tick_to_shift );
 
@@ -219,6 +201,6 @@ public:
 
 		// calculate difference between tick sent by player and our latency based tick.
 		// ensure this record isn't too old.
-		return std::abs( correct - ( curtime - m_sim_time ) ) < 0.19f;
+		return fabs( correct - ( curtime - m_sim_time ) ) <= 0.2f;
 	}
 };

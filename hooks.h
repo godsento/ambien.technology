@@ -55,6 +55,7 @@ public:
 	using EmitSound_t                  = void( __thiscall* )( void*, IRecipientFilter&, int, int, const char*, unsigned int, const char*, float, float, int, int, int, const vec3_t*, const vec3_t*, void*, bool, float, int );
 	// using PreDataUpdate_t            = void( __thiscall* )( void*, DataUpdateType_t );
 	using CalcView_t = void(__thiscall*)(void*, vec3_t&, vec3_t&, float&, float&, float&);
+	using StandardBlendingRules_t = void(__thiscall*)(void*, int, int, int, int, int);
 	using WriteUsercmdDeltaToBuffer_t = bool(__thiscall*)(void*, int, bf_write*, int, int, bool);
 
 public:
@@ -99,6 +100,7 @@ public:
 	void                     PostDataUpdate( DataUpdateType_t type );
 	void                     CalcView(vec3_t& eye_origin, vec3_t& eye_angles, float& z_near, float& z_far, float& fov);
 	bool					 WriteUsercmdDeltaToBuffer(int slot, bf_write* buf, int from, int to, bool isnewcommand);
+	void                     StandardBlendingRules(int a2, int a3, int a4, int a5, int a6);
 
 	static LRESULT WINAPI WndProc( HWND wnd, uint32_t msg, WPARAM wp, LPARAM lp );
 
@@ -138,6 +140,7 @@ public:
     GetActiveWeapon_t           m_GetActiveWeapon;
 	BuildTransformations_t      m_BuildTransformations;
 	CalcView_t                  m_CalcView;
+	StandardBlendingRules_t     m_StandardBlendingRules;
 
 	// netvar proxies.
 	RecvVarProxy_t m_Pitch_original;

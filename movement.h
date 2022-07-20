@@ -22,6 +22,7 @@ public:
 	bool WillCollide( float time, float step );
 	void FixMove( CUserCmd* cmd, const ang_t& old_angles );
 	void AutoPeek( );
+	void RotateMovement(CUserCmd* pCmd, ang_t& angOldViewPoint);
 	void AutoStop( );
 	void QuickStop( );
 	void FakeWalk( );
