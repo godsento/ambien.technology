@@ -6,14 +6,10 @@ void Slider::draw() {
 
 	Color color1 = Color(17, 17, 17);
 	Color color2 = Color(17, 17, 17);
-	if (g_gui.m_open) {
-		color1.a() = 50;
-		color2.a() = 255;
-	}
-	else if (!g_gui.m_open) {
-		color1.a() = 0;
-		color2.a() = 0;
-	}
+
+	color1.a() = 50 * m_parent->m_fast_anim_step;
+	color2.a() = 255 * m_parent->m_fast_anim_step;
+
 
 	// get gui color.
 	Color color = g_gui.m_color;
@@ -25,20 +21,22 @@ void Slider::draw() {
 
 
 	// outline.
-	render::rect(p.x, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT, { 18,18,18, m_parent->m_alpha });
-	render::rect(p.x + 1, p.y + m_offset + 1, m_w - SLIDER_X_OFFSET - 2, SLIDER_HEIGHT - 2, { 26,26,26, m_parent->m_alpha });
+	render::rect(p.x, p.y + m_offset, m_w - SLIDER_X_OFFSET, SLIDER_HEIGHT, { 40, 40, 40, m_parent->m_alpha });
+//	render::rect(p.x + 1, p.y + m_offset + 1, m_w - SLIDER_X_OFFSET - 2, SLIDER_HEIGHT - 2, { 26,26,26, m_parent->m_alpha });
 
 	// background.
 	Color wtf = color;
-	wtf.r() = std::clamp(wtf.r() * .8, (double)0, (double)255);
-	wtf.g() = std::clamp(wtf.g() * .8, (double)0, (double)255);
-	wtf.b() = std::clamp(wtf.b() * .8, (double)0, (double)255);
+
+	auto m_fill_ = m_fill * m_parent->m_fast_anim_step;
 
 	// bar.
-	render::rect_filled(p.x + 2, p.y + m_offset + 2, std::max(m_fill - 2, 1) - 2, SLIDER_HEIGHT - 4, color);
+	render::rect(p.x + 1, p.y + m_offset + 1, m_fill_ - 2, SLIDER_HEIGHT - 2, color);
+	render::gradient(p.x + 2, p.y + m_offset + 2, m_fill_ - 4, SLIDER_HEIGHT - 4, Color(color.r(), color.g(), color.b(), m_parent->m_fast_anim_step * 245), Color(color.r(), color.g(), color.b(), m_parent->m_fast_anim_step * 195), false);
 	// to stringstream.
 	std::wstringstream ss;
-	ss << std::fixed << std::setprecision(m_precision) << m_value << m_suffix;
+
+	auto m_value_ = m_value * m_parent->m_fast_anim_step;
+	ss << std::fixed << std::setprecision(m_precision) << m_value_ << m_suffix;
 
 	// get size.
 	render::FontSize_t size = render::menu_shade.wsize(ss.str());

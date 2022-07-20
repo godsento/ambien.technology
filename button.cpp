@@ -6,7 +6,7 @@ void Button::draw() {
 
 
 	// draw border.
-	render::rect(p.x + BUTTON_X_OFFSET + 1, p.y, m_w - BUTTON_X_OFFSET - 1, BUTTON_BOX_HEIGHT, { 14, 14, 14 ,m_parent->m_alpha });
+	render::rect(p.x + BUTTON_X_OFFSET + 1, p.y, m_w - BUTTON_X_OFFSET - 1, BUTTON_BOX_HEIGHT, { 40, 40, 40, m_parent->m_alpha });
 
 	// button name
 	render::menu.string(p.x + (m_w / 2),

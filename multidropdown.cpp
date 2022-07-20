@@ -42,7 +42,7 @@ void MultiDropdown::draw() {
 
 
 	// draw border.
-	render::rect(p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT, { 14, 14, 14, m_parent->m_alpha });
+	render::rect(p.x + DROPDOWN_X_OFFSET, p.y + m_offset, m_w - DROPDOWN_X_OFFSET, DROPDOWN_BOX_HEIGHT, { 40, 40, 40, m_parent->m_alpha });
 
 	// draw inside.
 	render::rect_filled(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + 1, m_w - DROPDOWN_X_OFFSET - 2, DROPDOWN_BOX_HEIGHT - 2, m_open ? Color(12, 12, 12, m_parent->m_alpha) : Color(18, 18, 18, m_parent->m_alpha));
@@ -55,7 +55,7 @@ void MultiDropdown::draw() {
 		if (m_open) {
 
 			// draw items outline.
-			render::rect(p.x + DROPDOWN_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR, m_w - DROPDOWN_X_OFFSET, m_anim_height + 1, { 0, 0, 0, m_parent->m_alpha });
+			render::rect(p.x + DROPDOWN_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR, m_w - DROPDOWN_X_OFFSET, m_anim_height + 1, { 40, 40, 40, m_parent->m_alpha });
 
 			// draw items inside.
 			render::rect_filled(p.x + DROPDOWN_X_OFFSET + 1, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_SEPARATOR + 1, m_w - DROPDOWN_X_OFFSET - 2, m_anim_height - 1, { 22, 22, 22, m_parent->m_alpha });

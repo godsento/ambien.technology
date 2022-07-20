@@ -13,6 +13,7 @@ public:
 	bool                m_open;
 	float               m_opacity;
 	int                 m_alpha;
+	float               m_fast_anim_step;
 	std::vector< Tab* >	m_tabs;
 private:
 	int                 m_key;

@@ -49,7 +49,7 @@ void Colorpicker::draw() {
 	render::menu.string(p.x, p.y - 2, { 205, 205, 205, m_parent->m_alpha }, m_label);
 
 	// outline.
-	render::rect(p.x + m_w - COLORPICKER_WIDTH, p.y, COLORPICKER_WIDTH, COlORPICKER_HEIGHT, { 68, 69, 84, m_parent->m_alpha / 2 });
+	render::rect(p.x + m_w - COLORPICKER_WIDTH, p.y, COLORPICKER_WIDTH, COlORPICKER_HEIGHT, { 40, 40, 40, m_parent->m_alpha });
 
 	// make a copy of the color.
 	Color preview = m_color;
@@ -82,7 +82,7 @@ void Colorpicker::draw() {
 			p.y + COlORPICKER_HEIGHT + 2,
 			COLORPICKER_PICKER_SIZE,
 			COLORPICKER_PICKER_SIZE,
-			{ 0, 0, 0, m_parent->m_alpha });
+			{ 40, 40, 40, m_parent->m_alpha });
 	}
 }
 

@@ -56,7 +56,7 @@ void Chams::SetupMaterial(IMaterial* mat, Color col, bool z_flag) {
 
 void Chams::init() {
 
-	/*std::ofstream("csgo/materials/promethea_glowoverlay.vmt") << R"#("VertexLitGeneric" 
+	std::ofstream("csgo/materials/promethea_glowoverlay.vmt") << R"#("VertexLitGeneric" 
 		{
 		"$additive" "1"
 		"$envmap" "models/effects/cube_white"
@@ -65,7 +65,7 @@ void Chams::init() {
 		"$envmapfresnelminmaxexp" "[0 1 2]"
 		"$alpha" "1"
 	})#";
-
+	/*
 	std::ofstream("csgo\\materials\\promethea_Animated.vmt") << R"#("VertexLitGeneric" 
 	"VertexLitGeneric"  {
 	"$basetexture" "sprites/light_glow04"
@@ -84,6 +84,32 @@ void Chams::init() {
 		}
 	}
 }*/
+
+	std::ofstream("csgo\\materials\\animated_shit2.vmt") <<
+		R"#("VertexLitGeneric"
+			{
+			 	"$basetexture" "models/inventory_items/dreamhack_trophies/dreamhack_star_blur"
+	"$wireframe" "1"
+	"$envmaptint" "[1 1 1]"
+	"$alpha" "1"
+	"$additive" "1"
+    "$selfillum"    "1"
+    "$znearer"      "0"
+    "$flat"         "1"
+    "$nofog"        "1"
+    "$model"        "1"
+    "$nocull"       "0"
+	"proxies"
+     {
+		"texturescroll"
+        {
+            "texturescrollvar" "$basetexturetransform"
+            "texturescrollrate" "0.2"
+            "texturescrollangle" "90"
+        }
+    }
+			}
+			)#";
 
 	std::ofstream("csgo\\materials\\promethea_shaded.vmt") << R"#("VertexLitGeneric" 
 	{
@@ -104,7 +130,7 @@ void Chams::init() {
 	// find stupid materials.
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("debug/debugambientcube"), XOR("Model textures")));
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("debug/debugdrawflat"), XOR("Model textures")));
-	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("promethea_metallic"), XOR("Model textures")));
+	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("animated_shit2"), XOR("Model textures")));
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("promethea_shaded"), XOR("Model textures")));
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("promethea_glowoverlay"), nullptr));
 	m_materials.push_back(g_csgo.m_material_system->FindMaterial(XOR("dev/glow_armsrace"), XOR("Model textures")));
@@ -140,89 +166,8 @@ bool Chams::OverridePlayer(int index) {
 	return false;
 }
 
-
-bool Chams::GenerateLerpedMatrix(int index, BoneArray* out) {
-	LagRecord* current_record;
-	AimPlayer* data;
-
-	Player* ent = g_csgo.m_entlist->GetClientEntity< Player* >(index);
-	if (!ent)
-		return false;
-
-	if (!g_aimbot.IsValidTarget(ent))
-		return false;
-
-	data = &g_aimbot.m_players[index - 1];
-	if (!data || data->m_records.empty())
-		return false;
-
-	if (data->m_records.size() < 2)
-		return false;
-
-	auto* channel_info = g_csgo.m_engine->GetNetChannelInfo();
-	if (!channel_info)
-		return false;
-
-	static float max_unlag = 0.2f;
-	static auto sv_maxunlag = g_csgo.m_cvar->FindVar(HASH("sv_maxunlag"));
-	if (sv_maxunlag) {
-		max_unlag = sv_maxunlag->GetFloat();
-	}
-
-	// CHANGE TO AROUND 500-1k IF ISSUES COME UP
-
-	for (auto it = data->m_records.rbegin(); it != data->m_records.rend(); it++) {
-		current_record = it->get();
-
-		bool end = it + 1 == data->m_records.rend();
-
-		if (current_record && current_record->valid() && (!end && ((it + 1)->get()))) {
-			if (current_record->m_origin.dist_to(ent->GetAbsOrigin()) < 1.f) {
-				return false;
-			}
-
-			vec3_t next = end ? ent->GetAbsOrigin() : (it + 1)->get()->m_origin;
-			float  time_next = end ? ent->m_flSimulationTime() : (it + 1)->get()->m_sim_time;
-
-			float total_latency = channel_info->GetAvgLatency(0) + channel_info->GetAvgLatency(1);
-			std::clamp(total_latency, 0.f, max_unlag);
-
-			float correct = total_latency + g_cl.m_lerp;
-			float time_delta = time_next - current_record->m_sim_time;
-			float add = end ? 1.f : time_delta;
-			float deadtime = current_record->m_sim_time + correct + add;
-
-			float curtime = g_csgo.m_globals->m_curtime;
-			float delta = deadtime - curtime;
-
-			float mul = 1.f / add;
-			vec3_t lerp = math::Interpolate(next, current_record->m_origin, std::clamp(delta * mul, 0.f, 1.f));
-
-			matrix3x4_t ret[128];
-
-			std::memcpy(ret,
-				current_record->m_bones,
-				sizeof(ret));
-
-			for (size_t i{ }; i < 128; ++i) {
-				vec3_t matrix_delta = current_record->m_bones[i].GetOrigin() - current_record->m_origin;
-				ret[i].SetOrigin(matrix_delta + lerp);
-			}
-
-			std::memcpy(out,
-				ret,
-				sizeof(ret));
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
 void Chams::RenderHistoryChams(int index) {
 	AimPlayer* data;
-	LagRecord* record;
 
 	Player* player = g_csgo.m_entlist->GetClientEntity< Player* >(index);
 	if (!player)
@@ -237,24 +182,20 @@ void Chams::RenderHistoryChams(int index) {
 		if (!data)
 			return;
 
-		record = g_resolver.FindLastRecord(data);
-		if (!record)
-			return;
-
-		// override blend.
-		SetAlpha(g_menu.main.players.chams_enemy_history_blend.get() / 100.f);
-
-		// set material and color.
-		SetupMaterial(m_materials[g_menu.main.players.chams_enemy_history_mat.get()], g_menu.main.players.chams_enemy_history_col.get(), true);
-
 		// was the matrix properly setup?
-		BoneArray arr[128];
-		if (Chams::GenerateLerpedMatrix(index, arr)) {
+		if (data->m_records.back().get() && !data->m_records.back().get()->valid()) {
+
+			// override blend.
+			SetAlpha(g_menu.main.players.chams_enemy_history_blend.get() / 100.f);
+
+			// set material and color.
+			SetupMaterial(m_materials[g_menu.main.players.chams_enemy_history_mat.get()], g_menu.main.players.chams_enemy_history_col.get(), true);
+
 			// backup the bone cache before we fuck with it.
 			auto backup_bones = player->m_BoneCache().m_pCachedBones;
 
 			// replace their bone cache with our custom one.
-			player->m_BoneCache().m_pCachedBones = arr;
+			player->m_BoneCache().m_pCachedBones = data->m_records.back().get()->m_bones;
 
 			// manually draw the model.
 			player->DrawModel();

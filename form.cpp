@@ -2,7 +2,18 @@
 
 void Form::draw() {
 	m_alpha = 0xff;
-	if (!m_open)
+
+	float alpha = m_open ? 1.f : 0.f;
+
+	if (alpha != m_fast_anim_step)
+		m_fast_anim_step = math::lerp(g_csgo.m_globals->m_frametime * 8, m_fast_anim_step, alpha);
+
+	math::clamp(m_fast_anim_step, 0.f, 1.f);
+
+
+	m_alpha = m_fast_anim_step * 255.f;
+
+	if (!m_alpha)
 		return;
 
 	// get gui color.
@@ -12,16 +23,10 @@ void Form::draw() {
 	Color color3 = g_gui.m_color;
 	Color color4 = colors::white;
 
-	if (m_open) {
-		color2.a() = 50;
-		color3.a() = 120;
-		color4.a() = 120;
-	}
-	else if (!m_open) {
-		color2.a() = 0;
-		color3.a() = 0;
-		color4.a() = 0;
-	}
+	color2.a() = 50 * m_fast_anim_step;
+	color3.a() = 120 * m_fast_anim_step;
+	color4.a() = 120 * m_fast_anim_step;
+
 	// background.
 	int top_bar_size = 22;
 	render::rect_filled(m_x, m_y, m_width, m_height, { 18,18,18, m_alpha });
@@ -36,7 +41,7 @@ void Form::draw() {
 	render::gradient(m_x, m_y + m_height - 40, m_width / 2, 1, { 0,0,0,0 }, color, true);
 	render::gradient(m_x + m_width / 2, m_y + m_height - 40, m_width / 2, 1, color, { 0,0,0,0 }, true);
 	Rect tabs_area = GetTabsRect();
-	render::menu_shade.string(tabs_area.x + tabs_area.w - 8, tabs_area.y + 9, { 255,255,255,50 }, "debug | v3.1", render::ALIGN_RIGHT);
+	render::menu_shade.string(tabs_area.x + tabs_area.w - 8, tabs_area.y + 9, { 255,255,255, (int)std::floor(50 * m_fast_anim_step) }, "debug | v3.1", render::ALIGN_RIGHT);
 	// draw tabs if we have any.
 	if (!m_tabs.empty()) {
 		// tabs background and border.
@@ -45,7 +50,7 @@ void Form::draw() {
 			const auto& t = m_tabs[i];
 			if (t == m_active_tab) {
 				render::menu_shade.string(tabs_area.x + font_w, tabs_area.y + 5, color, t->m_title);
-				render::menu_shade.string(tabs_area.x + font_w, tabs_area.y + 15, { 255,255,255,50 }, t->m_desc);
+				render::menu_shade.string(tabs_area.x + font_w, tabs_area.y + 15, { 255,255,255,  (int)std::floor(50 * m_fast_anim_step) }, t->m_desc);
 			}
 			else
 				render::menu_shade.string(tabs_area.x + font_w, tabs_area.y + 9, color4, t->m_title);

@@ -37,17 +37,8 @@ LagRecord* Resolver::FindLastRecord(AimPlayer* data) {
 	if (data->m_records.empty())
 		return nullptr;
 
-	// iterate records in reverse.
-	for (auto it = data->m_records.crbegin(); it != data->m_records.crend(); ++it) {
-		current = it->get();
 
-		// if this record is valid.
-		// we are done since we iterated in reverse.
-		if (current->valid() && !current->immune() && !current->dormant())
-			return current;
-	}
-
-	return nullptr;
+	return data->m_records.back().get();
 }
 
 void Resolver::PredictBodyUpdates(Player* player, LagRecord* record) {

@@ -10,17 +10,13 @@ void Checkbox::draw() {
 
 	Color color1 = Color(18, 18, 18);
 	Color color2 = Color(18, 18, 18);
-	if (g_gui.m_open) {
-		color1.a() = 50;
-		color2.a() = 255;
-	}
-	else if (!g_gui.m_open) {
-		color1.a() = 0;
-		color2.a() = 0;
-	}
+
+	color1.a() = 50 * m_parent->m_fast_anim_step;
+	color2.a() = 255 * m_parent->m_fast_anim_step;
+
 
 	// render black outline on checkbox.
-	render::rect(p.x, p.y, CHECKBOX_SIZE, CHECKBOX_SIZE, { 0, 0, 0, m_parent->m_alpha });
+	render::rect(p.x, p.y, CHECKBOX_SIZE, CHECKBOX_SIZE, { 40, 40, 40, m_parent->m_alpha });
 
 	// render checkbox title.
 	if (m_use_label)

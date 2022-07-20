@@ -174,6 +174,15 @@ public:
 		if( !player->enemy( g_cl.m_local ) )
 			return false;
 
+		if (player->dormant())
+			return false;
+
+		if (!player->GetClientClass())
+			return false;
+
+		if (player->m_fImmuneToGunGameDamageTime())
+			return false;
+
 		return true;
 	}
 
