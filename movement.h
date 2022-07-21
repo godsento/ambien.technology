@@ -24,6 +24,7 @@ public:
 	void AutoPeek( );
 	void RotateMovement(CUserCmd* pCmd, ang_t& angOldViewPoint);
 	void AutoStop( );
+	void AutoPeek(CUserCmd* cmd, float wish_yaw);
 	void QuickStop( );
 	void FakeWalk( );
 

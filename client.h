@@ -51,6 +51,10 @@ public:
 	void UpdateRevolverCock( );
 	void UpdateIncomingSequences( );
 
+	int get_fps() {
+		return (int)std::round(1.f / g_csgo.m_globals->m_frametime);
+	}
+
 public:
 	// local player variables.
 	Player*          m_local;

@@ -404,19 +404,22 @@ void AimPlayer::SetupHitboxes(LagRecord* record, bool history) {
 	if (ret.get(1)) {
 		m_hitboxes.push_back({ HITBOX_THORAX, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_CHEST, HitscanMode::NORMAL });
-		m_hitboxes.push_back({ HITBOX_UPPER_CHEST, HitscanMode::NORMAL });
+
+		if (g_cl.get_fps() > 70)
+			m_hitboxes.push_back({ HITBOX_UPPER_CHEST, HitscanMode::NORMAL });
 	}
 
 
 
 	// arms.
-	if (ret.get(3)) {
+	if (ret.get(3) && g_cl.get_fps() > 70) {
 		m_hitboxes.push_back({ HITBOX_L_UPPER_ARM, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_R_UPPER_ARM, HitscanMode::NORMAL });
 	}
 
 	// legs.
 	if (ret.get(4)) {
+
 		m_hitboxes.push_back({ HITBOX_L_THIGH, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_R_THIGH, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_L_CALF, HitscanMode::NORMAL });
@@ -744,7 +747,10 @@ int Aimbot::FindBodyScale() {
 
 bool Aimbot::CheckHitchance( Player *player, const ang_t &angle ) {
 	constexpr float HITCHANCE_MAX = 100.f;
-	constexpr int   SEED_MAX = 255;
+	int   SEED_MAX = 256;
+
+	if (g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(0))
+		SEED_MAX = 128.f;
 
 	vec3_t     start{ g_cl.m_shoot_pos }, end, fwd, right, up, dir, wep_spread;
 	float      inaccuracy, spread;
@@ -776,7 +782,7 @@ bool Aimbot::CheckHitchance( Player *player, const ang_t &angle ) {
 
 
 	// iterate all possible seeds.
-	for ( int i{ }; i <= SEED_MAX; ++i ) {
+	for ( int i{ 0 }; i <= SEED_MAX; ++i ) {
 		// get spread.
 		wep_spread = g_cl.m_weapon->CalculateSpread( i, inaccuracy, spread );
 
@@ -886,7 +892,9 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 			// center.
 			points.push_back(center);
 
-			if (multipoint.get(3)) {
+			bool low_fps = g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(1);
+
+			if (multipoint.get(3) && !low_fps) {
 				// get point offset relative to center point
 				// and factor in hitbox scale.
 				float d2 = (bbox->m_mins.x - center.x) * scale;
@@ -978,17 +986,23 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 
 		else if (index == HITBOX_R_CALF || index == HITBOX_L_CALF) {
 	
+			bool low_fps = g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(2);
 
 			// half bottom.
-			if (multipoint.get(3))
+			if (multipoint.get(3) && !low_fps)
 				points.push_back({ bbox->m_maxs.x - (bbox->m_radius / 2.f), bbox->m_maxs.y, bbox->m_maxs.z });
 		}
 
 
 		// arms get only one point.
 		else if (index == HITBOX_R_UPPER_ARM || index == HITBOX_L_UPPER_ARM) {
+
+
+			bool low_fps = g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(3);
+
 			// elbow.
-			points.push_back({ bbox->m_maxs.x + bbox->m_radius, center.y, center.z });
+			if (!low_fps)
+				points.push_back({ bbox->m_maxs.x + (bbox->m_radius * 0.75f), center.y, center.z });
 		}
 
 		// nothing left to do here.

@@ -241,6 +241,7 @@ void Resolver::ResolveWalk(AimPlayer* data, LagRecord* record) {
 	record->m_eye_angles.y = record->m_body;
 
 	// reset stand and body index.		
+	data->m_last_freestand_scan = 0;
 
 	if (record->m_anim_velocity.length() > 20.f) { // niggers
 		data->m_lm_index = 0;
@@ -262,39 +263,12 @@ void Resolver::ResolveWalk(AimPlayer* data, LagRecord* record) {
 void Resolver::anti_freestand(AimPlayer* data, LagRecord* record) {
 	float away = GetAwayAngle(record);
 
-	CGameTrace tr_right;
-	CGameTrace tr_left;
-	CTraceFilterSimple filter{ };
-	filter.SetPassEntity(g_cl.m_local);
-
-	ang_t angDirectionAngle;
-	math::VectorAngles(g_cl.m_shoot_pos - record->m_pred_origin, angDirectionAngle);
-
-	angDirectionAngle.y += 180.f;
-
-	vec3_t forward, right, up;
-	math::AngleVectors(angDirectionAngle, &forward, &right, &up);
-
-	auto vecStart = g_cl.m_shoot_pos;;
-	auto vecEnd = vecStart + forward * (g_cl.m_shoot_pos.dist_to(record->m_pred_origin) * 1.25f);
-
-	vecEnd.z = data->m_player->GetShootPosition().z;
 
 
-	g_csgo.m_engine_trace->TraceRay(Ray(g_cl.m_shoot_pos, vecEnd + right * 17.f), CONTENTS_SOLID, &filter, &tr_right);
-
-	//	g_csgo.m_debug_overlay->AddLineOverlay(g_cl.m_shoot_pos, vecEnd + right * 16.f, 255, 0, 0, false, 1); // base line
-	//	g_csgo.m_debug_overlay->AddLineOverlay(g_cl.m_shoot_pos, tr_right.m_endpos, 255, 255, 0, false, 1); // where it hits
-
-	g_csgo.m_engine_trace->TraceRay(Ray(g_cl.m_shoot_pos, vecEnd - right * 17.f), CONTENTS_SOLID, &filter, &tr_left);
-
-	//	g_csgo.m_debug_overlay->AddLineOverlay(g_cl.m_shoot_pos, vecEnd - right * 16.f, 255, 0, 0, false, 1); // base line
-	// g_csgo.m_debug_overlay->AddLineOverlay(g_cl.m_shoot_pos, tr_left.m_endpos, 255, 255, 0, false, 1); // where it hits
-
-	if ((tr_right.m_fraction > 0.97f && tr_left.m_fraction > 0.97f) || (tr_left.m_fraction == tr_right.m_fraction) || std::abs(tr_left.m_fraction - tr_right.m_fraction) <= 0.1f)
+	if ((data->tr_right.m_fraction > 0.97f && data->tr_left.m_fraction > 0.97f) || (data->tr_left.m_fraction == data->tr_right.m_fraction) || std::abs(data->tr_left.m_fraction - data->tr_right.m_fraction) <= 0.1f)
 		record->m_eye_angles.y = away + 180.f;
 	else
-		record->m_eye_angles.y = (tr_left.m_fraction < tr_right.m_fraction) ? away - 90.f : away + 90.f;
+		record->m_eye_angles.y = (data->tr_left.m_fraction < data->tr_right.m_fraction) ? away - 90.f : away + 90.f;
 }
 
 void Resolver::ResolveStand(AimPlayer* data, LagRecord* record) {

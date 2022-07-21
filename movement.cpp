@@ -631,28 +631,66 @@ void gotoStart(CUserCmd* cmd)
 	math::clamp(g_cl.m_cmd->m_forward_move, -450.f, 450.f);
 	math::clamp(g_cl.m_cmd->m_side_move, -450.f, 450.f);
 }
-void Movement::AutoPeek( ) {
-	if (!(g_cl.m_local->m_fFlags() & FL_ONGROUND)) return;
-	if (g_input.GetKeyState(g_menu.main.misc.autopeek.get()))
-	{
-		if (quickpeekstartpos.is_zero())
-		{
+
+void Movement::AutoPeek(CUserCmd* cmd, float wish_yaw) {
+
+	if (g_input.GetKeyState(g_menu.main.misc.autopeek.get())) {
+		if (quickpeekstartpos.is_zero()) {
 			quickpeekstartpos = g_cl.m_local->GetAbsOrigin();
+			if (!(g_cl.m_flags & FL_ONGROUND)) {
+				CTraceFilterWorldOnly filter;
+				CGameTrace trace;
+
+				g_csgo.m_engine_trace->TraceRay(Ray(quickpeekstartpos, quickpeekstartpos - vec3_t(0.0f, 0.0f, 1000.0f)), MASK_SOLID, &filter, &trace);
+
+				if (trace.m_fraction < 1.0f)
+					quickpeekstartpos = trace.m_endpos + vec3_t(0.0f, 0.0f, 2.0f);
+			}
 		}
-		else
-		{
-			if (g_cl.m_shot) { hasShot = true; g_aimbot.m_stop = false; }
-			if (hasShot)
-			{
-				gotoStart(g_cl.m_cmd);
-				return;
+		else {
+			bool revolver_shoot = g_cl.m_weapon_id == REVOLVER && !g_cl.m_revolver_fire && (cmd->m_buttons & IN_ATTACK || cmd->m_buttons & IN_ATTACK2);
+
+			if (g_cl.m_shot)
+				hasShot = true;
+
+			if (hasShot) {
+				vec3_t current_position = g_cl.m_local->GetAbsOrigin();
+				vec3_t difference = current_position - quickpeekstartpos;
+
+				if (current_position.dist_to(quickpeekstartpos) > 0.1f) {
+					vec3_t velocity = vec3_t(difference.x * cos(wish_yaw / 180.0f * math::pi) + difference.y * sin(wish_yaw / 180.0f * math::pi), difference.y * cos(wish_yaw / 180.0f * math::pi) - difference.x * sin(wish_yaw / 180.0f * math::pi), difference.z);
+
+					if (difference.length_2d() < 50.0f) {
+						cmd->m_forward_move = -velocity.x * 20.0f;
+						cmd->m_side_move = velocity.y * 20.0f;
+					}
+					else if (difference.length_2d() < 100.0f) {
+						cmd->m_forward_move = -velocity.x * 10.0f;
+						cmd->m_side_move = velocity.y * 10.0f;
+					}
+					else if (difference.length_2d() < 150.0f) {
+						cmd->m_forward_move = -velocity.x * 5.0f;
+						cmd->m_side_move = velocity.y * 5.0f;
+					}
+					else if (difference.length_2d() < 250.0f) {
+						cmd->m_forward_move = -velocity.x * 2.0f;
+						cmd->m_side_move = velocity.y * 2.0f;
+					}
+					else {
+						cmd->m_forward_move = -velocity.x * 1.0f;
+						cmd->m_side_move = velocity.y * 1.0f;
+					}
+				}
+				else {
+					hasShot = false;
+					quickpeekstartpos.clear();
+				}
 			}
 		}
 	}
-	else
-	{
+	else {
 		hasShot = false;
-		quickpeekstartpos = vec3_t{ 0, 0, 0 };
+		quickpeekstartpos.clear();
 	}
 }
 

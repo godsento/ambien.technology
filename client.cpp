@@ -246,7 +246,9 @@ void Client::DoMove( ) {
 	if (g_menu.main.misc.fakewalk_mode.get() == 0) {
 		g_movement.FakeWalk();
 	}
+	g_movement.AutoPeek(g_cl.m_cmd, m_strafe_angles.y);
 	g_movement.AutoStop();
+
 	// predict input.
 	g_inputpred.run( );
 
@@ -292,6 +294,8 @@ void Client::DoMove( ) {
 			penetration::run( &in, &tmp_pen_data );
 		}
 
+
+
 		// set pen data for penetration crosshair.
 		m_pen_data = tmp_pen_data;
 
@@ -301,6 +305,30 @@ void Client::DoMove( ) {
 		UpdateRevolverCock( );
 		m_weapon_fire = CanFireWeapon( );
 	}
+
+
+	for (int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i) {
+		Player* player = g_csgo.m_entlist->GetClientEntity< Player* >(i);
+
+		if (!g_aimbot.IsValidTarget(player))
+			continue;
+
+		AimPlayer* data = &g_aimbot.m_players[i - 1];
+		if (!data)
+			continue;
+
+		if (data->m_records.empty())
+			continue;
+
+		if (!data->m_records.front().get()->valid())
+			continue;
+
+		if (std::abs(data->m_last_freestand_scan - player->m_flSimulationTime()) > g_cl.get_fps() <= 70 ? 3.f : 1.f)
+			g_lagcomp.collect_awall_shit(data);
+	}
+
+	// run k
+
 
 	// last tick defuse.
 	// todo - dex;  figure out the range for CPlantedC4::Use?
@@ -337,7 +365,7 @@ void Client::DoMove( ) {
 	}
 
 	// would not work without this for obv reasons.
-	g_movement.AutoPeek();
+	// g_movement.AutoPeek();
 
 	// run antiaims.
 	if (!g_tickshift.m_shifting && !g_tickshift.m_shifted) {

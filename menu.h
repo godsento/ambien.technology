@@ -61,6 +61,8 @@ public:
 	Dropdown      auto_stop;
 	Checkbox      auto_stop_between;
 
+	MultiDropdown fps;
+
 public:
 	void init( ) {
 		// title.
@@ -71,6 +73,9 @@ public:
 
 		silent.setup( XOR( "silent aimbot" ), XOR( "silent" ) );
 		RegisterElement( &silent );
+
+		fps.setup(XOR("on low fps"), XOR("fps"), { "lower hit chance precision", "disable feet multipoints", "disable legs multipoints", "disable arm multipoints" });
+		RegisterElement(&fps);
 
 		selection.setup( XOR( "target selection" ), XOR( "selection" ), { XOR( "distance" ), XOR( "crosshair" ), XOR( "damage" ), XOR( "health" ), XOR( "lag" ), XOR( "height" ) } );
 		RegisterElement( &selection );

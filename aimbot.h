@@ -73,7 +73,11 @@ public:
 	float last_delta;
 	float m_shot_time;
 	float m_last_lby_change;
+	float m_last_freestand_scan;
 	bool  m_prefer_body;
+
+	CGameTrace tr_right;
+	CGameTrace tr_left;
 public:
 	void UpdateAnimations(LagRecord* record);
 	void OnNetUpdate(Player* player);

@@ -255,7 +255,7 @@ void Visuals::ThirdpersonThink() {
 			if (value > g_menu.main.visuals.thirdperson_dist.get()) value = g_menu.main.visuals.thirdperson_dist.get();
 		}
 
-		offset.z = value;
+		offset.z = std::clamp(value, 1.f, 300.f);
 
 		// start pos.
 		origin = g_cl.m_shoot_pos;
