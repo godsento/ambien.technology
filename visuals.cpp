@@ -2288,3 +2288,107 @@ void Visuals::DebugAimbotPoints(Player* player) {
 			render::rect_filled(screen.x, screen.y, 2, 2, { 0, 255, 255, 255 });
 	}
 }
+
+void Visuals::Indicators()
+{
+	if (!g_csgo.m_engine->IsInGame() || !g_cl.m_local->alive())
+		return;
+
+	if (!g_menu.main.visuals.keybinds.get())
+		return;
+
+	Color color = g_gui.m_color;
+	struct Indicator_t { std::string text; std::string mode; std::string info; };
+	std::vector< Indicator_t > indicators{ };
+
+	if (g_input.GetKeyState(g_menu.main.aimbot.baim_key.get()))
+	{
+		Indicator_t ind{};
+		ind.text = XOR("Force Body Aim");
+		ind.mode = XOR("[Holding]");
+		indicators.push_back(ind);
+	}
+
+	if (g_input.GetKeyState(g_menu.main.aimbot.baim_key.get()))
+	{
+		Indicator_t ind{};
+		ind.text = XOR("Force Body Aim");
+		ind.mode = XOR("[Holding]");
+		indicators.push_back(ind);
+	}
+	if (g_visuals.m_thirdperson)
+	{
+		Indicator_t ind{};
+		ind.text = XOR("Third person");
+		ind.mode = XOR("[Toggled]");
+		indicators.push_back(ind);
+	}
+
+	if (g_tickshift.m_double_tap) {
+		Indicator_t ind{};
+		ind.text = XOR("Double Tap");
+		ind.mode = XOR("[Toggled]");
+		indicators.push_back(ind);
+
+	}
+
+      /* if (g_menu.main.antiaim.fake_flick.get()) {
+		Indicator_t ind{};
+		ind.text = XOR("Fake Flick");
+		ind.mode = XOR("[Toggled]");
+		indicators.push_back(ind);
+
+	}*/
+
+
+	if (g_input.GetKeyState(g_menu.main.antiaim.lag_exploit.get())) {
+		Indicator_t ind{};
+		ind.text = XOR("Lag Exploit");
+		ind.mode = XOR("[Hold]");
+		indicators.push_back(ind);
+
+	}
+
+
+	//if (g_input.GetKeyState(g_menu.main.aimbot.min_key.get()))
+	//{
+	//    Indicator_t ind{};
+	//    ind.text = XOR("Damage Override");
+	//    ind.mode = XOR("[Holding]");
+	//    indicators.push_back(ind);
+	//}
+
+	if (g_aimbot.m_fake_latency)
+	{
+		Indicator_t ind{};
+		ind.text = XOR("Fake Latency");
+		ind.mode = XOR("[Toggled]");
+		indicators.push_back(ind);
+	}
+
+	if (g_input.GetKeyState(g_menu.main.misc.fakewalk.get()))
+	{
+		Indicator_t ind{};
+		ind.text = XOR("Fake Walk");
+		ind.mode = XOR("[Holding]");
+		indicators.push_back(ind);
+	}
+	Color icolor = g_gui.m_color;
+	render::rect_outlined(10, g_cl.m_height / 2 + 10, 150, 17, { icolor.r(),icolor.g(),icolor.b(), 90 }, { icolor.r(),icolor.g(),icolor.b(), 20 });
+	render::gradient(10, g_cl.m_height / 2 + 10, 150, 17, { icolor.r(),icolor.g(),icolor.b(), 90 }, { icolor.r(),icolor.g(),icolor.b(), 20 }, true);
+
+	render::norm.string(85, g_cl.m_height / 2 + 12, colors::white, XOR("Bindings"), render::ALIGN_CENTER);
+
+	if (indicators.empty())
+		return;
+
+	render::rect_filled(10, g_cl.m_height / 2 + 27, 150, (indicators.size() * 15), { icolor.r(),icolor.g(),icolor.b(), 5 });
+
+	for (size_t i{ }; i < indicators.size(); ++i) {
+		auto& indicator = indicators[i];
+		auto size = render::norm.size(indicator.text);
+
+		render::norm.string(12, (g_cl.m_height / 2 + 27) + (i * 15), colors::white, indicator.text, render::ALIGN_LEFT);
+		render::norm.string(135, (g_cl.m_height / 2 + 27) + (i * 15), color, indicator.mode, render::ALIGN_CENTER);
+	}
+}
