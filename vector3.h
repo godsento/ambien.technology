@@ -254,6 +254,12 @@ public:
 			this->y > -tolerance && this->y < tolerance&&
 			this->z > -tolerance && this->z < tolerance);
 	}
+
+	bool __inline IsZero()
+	{
+		return x == 0.0f && y == 0.0f && z == 0.0f; //-V550
+	}
+
 };
 
 __forceinline vec3_t operator*( float f, const vec3_t& v ) {

@@ -3,43 +3,50 @@
 Resolver g_resolver{};;
 
 LagRecord* Resolver::FindIdealRecord(AimPlayer* data) {
-	LagRecord* first_valid, * current;
 
-	if (data->m_records.empty())
+	if (data->m_records.empty() || !data)
 		return nullptr;
-
-	first_valid = nullptr;
 
 	// iterate records.
 	for (const auto& it : data->m_records) {
-		if (it->dormant() || it->immune() || !it->valid())
+
+		if (!it->valid())
 			continue;
 
-		// get current record.
-		current = it.get();
-
-		// first record that was valid, store it for later.
-		if (!first_valid)
-			first_valid = current;
-
 		// try to find a record with a shot, lby update, walking or no anti-aim.
-		if (it->m_shot || it->m_mode == Modes::RESOLVE_BODY || it->m_mode == Modes::RESOLVE_WALK || it->m_mode == Modes::RESOLVE_NONE)
-			return current;
+		if (it->m_mode == Modes::RESOLVE_BODY || it->m_mode == Modes::RESOLVE_WALK)
+			return it.get();
 	}
 
 	// none found above, return the first valid record if possible.
-	return (first_valid) ? first_valid : nullptr;
+	return nullptr;
 }
 
 LagRecord* Resolver::FindLastRecord(AimPlayer* data) {
-	LagRecord* current;
 
 	if (data->m_records.empty())
 		return nullptr;
 
-
 	return data->m_records.back().get();
 }
+
+LagRecord* Resolver::FindPreLastRecord(AimPlayer* data) {
+
+	if (data->m_records.empty() || !data)
+		return nullptr;
+
+	// iterate records in reverse.
+	for (auto it = data->m_records.crbegin(); it == data->m_records.crend(); ++it) {
+
+		if (!it->get()->valid())
+			continue;
+
+		return it->get();
+	}
+
+	return nullptr;
+}
+
 
 void Resolver::PredictBodyUpdates(Player* player, LagRecord* record) {
 
@@ -181,6 +188,8 @@ void Resolver::MatchShot(AimPlayer* data, LagRecord* record) {
 			if (previous && !previous->dormant())
 				record->m_eye_angles.x = previous->m_eye_angles.x;
 		}
+
+		data->m_shot_time = weapon->m_fLastShotTime();
 	}
 }
 
@@ -241,7 +250,7 @@ void Resolver::ResolveWalk(AimPlayer* data, LagRecord* record) {
 	record->m_eye_angles.y = record->m_body;
 
 	// reset stand and body index.		
-	data->m_last_freestand_scan = 0;
+	data->m_last_freestand_scan = record->m_sim_time + 0.05f;
 
 	if (record->m_anim_velocity.length() > 20.f) { // niggers
 		data->m_lm_index = 0;

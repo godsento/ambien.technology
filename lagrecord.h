@@ -73,6 +73,7 @@ public:
 	// other stuff.
 	float  m_interp_time;
 	bool   m_retard;
+	float  m_lag_time;
 public:
 
 	// default ctor.
@@ -84,7 +85,8 @@ public:
 		m_resolved{ false },
 		m_retard{ false },
 		m_lag{}, 
-		m_bones{} {}
+		m_bones{},
+		m_lag_time{} {}
 
 	// ctor.
 	__forceinline LagRecord( Player* player ) : 
@@ -95,7 +97,8 @@ public:
 		m_resolved{ false },
 		m_retard{ false },
 		m_lag{}, 
-		m_bones{} {
+		m_bones{},
+		m_lag_time{} {
 
 		store( player );
 	}
@@ -180,27 +183,28 @@ public:
 	// function: checks if LagRecord obj is hittable if we were to fire at it now.
 	bool valid( ) {
 
-		if (this->immune())
+		if (!this)
 			return false;
 
 		if (this->dormant())
 			return false;
 
+		if (this->immune())
+			return false;
+
 		// use prediction curtime for this.
-		float curtime = game::TICKS_TO_TIME( g_cl.m_local->m_nTickBase( ) - g_tickshift.m_tick_to_shift );
+		float curtime = game::TICKS_TO_TIME( g_cl.m_local->m_nTickBase() );
 
-		// correct is the amount of time we have to correct game time,
-		float correct = g_cl.m_lerp + g_cl.m_latency;
 
-		// stupid fake latency goes into the incoming latency.
-		float in = g_csgo.m_net->GetLatency( INetChannel::FLOW_INCOMING );
-		correct += in;
+		float in = g_csgo.m_net->GetLatency(INetChannel::FLOW_INCOMING);
+		in += g_csgo.m_net->GetLatency(INetChannel::FLOW_OUTGOING);
+		in += g_cl.m_lerp;
 
 		// check bounds [ 0, sv_maxunlag ]
-		math::clamp( correct, 0.f, g_csgo.sv_maxunlag->GetFloat( ) );
+		math::clamp(in, 0.f, 1.f);
 
 		// calculate difference between tick sent by player and our latency based tick.
 		// ensure this record isn't too old.
-		return fabs( correct - ( curtime - m_sim_time ) ) <= 0.2f;
+		return fabsf(in - (curtime - m_sim_time)) <= 0.2f;
 	}
 };

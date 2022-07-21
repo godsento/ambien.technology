@@ -23,10 +23,13 @@ public:
 	void FixMove( CUserCmd* cmd, const ang_t& old_angles );
 	void AutoPeek( );
 	void RotateMovement(CUserCmd* pCmd, ang_t& angOldViewPoint);
+	void FastStop();
 	void AutoStop( );
 	void AutoPeek(CUserCmd* cmd, float wish_yaw);
 	void QuickStop( );
 	void FakeWalk( );
+
+	void AutoStop_Alt();
 
 	vec3_t quickpeekstartpos;
 	bool hasShot;

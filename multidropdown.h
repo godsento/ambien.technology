@@ -65,6 +65,9 @@ protected:
 	bool				       m_open;
 	std::string				   m_label;
 	std::vector< std::string > m_items;
+	float m_anim_per_items[128];
+	float m_anim_per_items_last_frame[128];
+	float m_lerped_shit[128];
 	float					   m_anim_height;
 	std::vector< size_t >	   m_active_items;
 	int						   m_offset;

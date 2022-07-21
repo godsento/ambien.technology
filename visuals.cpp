@@ -504,6 +504,17 @@ void Visuals::hotkeys()
 
 		hotkeys.push_back(data);
 	}
+	bool dmg = (g_aimbot.damage_override && g_menu.main.aimbot.dmg_override_mode.get() == 1) || (g_menu.main.aimbot.dmg_override_mode.get() == 0 && g_input.GetKeyState(g_menu.main.aimbot.dmg_override.get()));
+
+	if (dmg) {
+		Hotkeys_t data;
+
+		data.color = { 210,210,210,255 };
+		data.text = "DMG";
+
+		hotkeys.push_back(data);
+
+	}
 
 	if (g_menu.main.antiaim.enable.get()) {
 
@@ -525,7 +536,7 @@ void Visuals::hotkeys()
 	if (g_tickshift.m_double_tap) {
 		Hotkeys_t data;
 
-		data.color = LerpRGB(0xff0000ff, 0xff15c27b, g_tickshift.m_charged_ticks/16.f);
+		data.color = LerpRGB(0xff0000ff, 0xff15c27b, g_tickshift.m_charged_ticks/14.f);
 		data.text = "HIGH CHOLESTEROL";
 
 		hotkeys.push_back(data);

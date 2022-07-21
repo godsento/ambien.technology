@@ -71,7 +71,7 @@ void Dropdown::draw() {
 				if (m_anim_height > item_offset) {
 
 					// yet again, it won't use list init inside the ternary conditional.
-					render::menu.string(p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset,
+					render::menu.string(p.x + 8 + ((i == m_active_item) ? 8 : 0), p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset,
 						(i == m_active_item) ? color : Color{ 152, 152, 152, m_parent->m_alpha },
 						m_items[i]);
 				}

@@ -21,11 +21,12 @@ void Form::draw() {
 	color.a() = m_alpha;
 	Color color2 = g_gui.m_color;
 	Color color3 = g_gui.m_color;
-	Color color4 = colors::white;
+	Color color4 = g_gui.m_color;
+	Color color5 = g_gui.m_color;
 
 	color2.a() = 50 * m_fast_anim_step;
 	color3.a() = 120 * m_fast_anim_step;
-	color4.a() = 120 * m_fast_anim_step;
+	color4.a() = 255 * m_fast_anim_step;
 
 	// background.
 	int top_bar_size = 22;
@@ -33,8 +34,32 @@ void Form::draw() {
 	render::rect_filled(m_x, m_y, m_width, top_bar_size, { 16,16,16, m_alpha });
 	render::gradient(m_x, m_y + top_bar_size, m_width / 2, 1, { 0,0,0,0 }, color, true);
 	render::gradient(m_x + m_width / 2, m_y + top_bar_size, m_width / 2, 1, color, { 0,0,0,0 }, true);
-	render::FontSize_t text_size = render::menu_shade.size("ambien");
-	render::menu_shade.string(m_x + m_width / 2, m_y + (top_bar_size / 2) - (text_size.m_height / 2), color4, "ambien", render::ALIGN_CENTER);
+	render::FontSize_t text_size = render::bold2.size("ambien");
+
+	// watch the fps drop
+	for (int i{ 1 }; i <= 2; ++i) {
+
+		color5.a() = (25.f / i) * m_fast_anim_step;
+
+		render::bold2.string(m_x + m_width / 2 + i, m_y + (top_bar_size / 2) - (text_size.m_height / 2), color5, "ambien", render::ALIGN_CENTER);
+		render::bold2.string(m_x + m_width / 2 - i, m_y + (top_bar_size / 2) - (text_size.m_height / 2), color5, "ambien", render::ALIGN_CENTER);
+
+		render::bold2.string(m_x + m_width / 2, m_y + (top_bar_size / 2) - (text_size.m_height / 2) + i, color5, "ambien", render::ALIGN_CENTER);
+		render::bold2.string(m_x + m_width / 2, m_y + (top_bar_size / 2) - (text_size.m_height / 2) - i, color5, "ambien", render::ALIGN_CENTER);
+
+		render::bold2.string(m_x + m_width / 2 - i, m_y + (top_bar_size / 2) - (text_size.m_height / 2) - i, color5, "ambien", render::ALIGN_CENTER);
+		render::bold2.string(m_x + m_width / 2 + i, m_y + (top_bar_size / 2) - (text_size.m_height / 2) + i, color5, "ambien", render::ALIGN_CENTER);
+
+
+		render::bold2.string(m_x + m_width / 2 - i, m_y + (top_bar_size / 2) - (text_size.m_height / 2) + i, color5, "ambien", render::ALIGN_CENTER);
+		render::bold2.string(m_x + m_width / 2 + i, m_y + (top_bar_size / 2) - (text_size.m_height / 2) - i, color5, "ambien", render::ALIGN_CENTER);
+	}
+
+	render::bold2.string(m_x + m_width / 2, m_y + (top_bar_size / 2) - (text_size.m_height / 2), color4, "ambien", render::ALIGN_CENTER);
+
+//	render::bold.string(m_x + m_width / 2 + 1, m_y + (top_bar_size / 2) - (text_size.m_height / 2) - 1, color5, "ambien", render::ALIGN_CENTER);
+//	render::bold.string(m_x + m_width / 2 - 1, m_y + (top_bar_size / 2) - (text_size.m_height / 2) + 1, color5, "ambien", render::ALIGN_CENTER);
+
 	render::rect(m_x + 1, m_y + 1, m_width - 2, m_height - 2, { 26,26,26, m_alpha });
 	// border.
 	render::rect(m_x, m_y, m_width, m_height, { 5, 5, 5, m_alpha });

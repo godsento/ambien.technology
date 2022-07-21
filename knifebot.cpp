@@ -1,5 +1,6 @@
 #include "includes.h"
 
+float constexpr max_dist = 128.f;
 void Aimbot::knife() {
 	struct KnifeTarget_t { bool stab; ang_t angle; LagRecord* record; };
 	KnifeTarget_t target{};
@@ -40,7 +41,7 @@ void Aimbot::knife() {
 			LagRecord* front = t->m_records.front().get();
 
 
-			if (front->m_pred_origin.dist_to(g_cl.m_shoot_pos) > 64.f)
+			if (front->m_pred_origin.dist_to(g_cl.m_shoot_pos) > max_dist)
 				continue;
 
 			t->m_player->m_vecOrigin() = front->m_pred_origin;
@@ -75,7 +76,7 @@ void Aimbot::knife() {
 				continue;
 
 
-			if (best->m_pred_origin.dist_to(g_cl.m_shoot_pos) <= 64.f) {
+			if (best->m_pred_origin.dist_to(g_cl.m_shoot_pos) <= max_dist) {
 
 				t->m_player->m_vecOrigin() = best->m_pred_origin;
 				t->m_player->SetAbsOrigin(best->m_pred_origin);
@@ -104,7 +105,7 @@ void Aimbot::knife() {
 			LagRecord* last = t->m_records.back().get();
 			if (last && last != best) {
 
-				if (last->m_pred_origin.dist_to(g_cl.m_shoot_pos) <= 64.f) {
+				if (last->m_pred_origin.dist_to(g_cl.m_shoot_pos) <= max_dist) {
 
 					t->m_player->m_vecOrigin() = last->m_pred_origin;
 					t->m_player->SetAbsOrigin(last->m_pred_origin);

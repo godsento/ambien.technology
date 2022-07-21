@@ -46,9 +46,6 @@ float penetration::scale( Player* player, float damage, float armor_ratio, int h
 	if (!g_cl.m_weapon_info)
 		return -1.f;
 
-	if (!g_cl.m_weapon_fire)
-		return -1.f;
-
 	float flDamage = damage;
 	const int nTeamNum = player->m_iTeamNum();
 	float flHeadDamageScale = nTeamNum == 3 ? g_csgo.m_cvar->FindVar(HASH("mp_damage_scale_ct_head"))->GetFloat() : g_csgo.m_cvar->FindVar(HASH("mp_damage_scale_t_head"))->GetFloat();
@@ -383,12 +380,15 @@ bool penetration::run( PenetrationInput_t* in, PenetrationOutput_t* out ) {
 			    out->m_damage   = (int)std::round(player_damage);
 			    out->m_target   = in->m_target;
 				
+
+				bool lethal = (g_menu.main.aimbot.scale_dmg.get() || weapon->m_iItemDefinitionIndex() == ZEUS) && player_damage >= in->m_target->m_iHealth();
+
 				// non-penetrate damage.
 				if( pen == 4 )
-					return player_damage >= in->m_target->m_iHealth() || player_damage >= in->m_damage;
+					return lethal || player_damage >= in->m_damage;
 					
 				// penetration damage.
-				return player_damage >= in->m_target->m_iHealth() || player_damage >= in->m_damage_pen;
+				return lethal || player_damage >= in->m_damage_pen;
 			}
 		}
 

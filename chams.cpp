@@ -182,14 +182,19 @@ void Chams::RenderHistoryChams(int index) {
 		if (!data)
 			return;
 
+		if (data->m_records.front().get()->m_broke_lc)
+			return;
+
+		// override blend.
+		SetAlpha(g_menu.main.players.chams_enemy_history_blend.get() / 100.f);
+
+		// set material and color.
+		SetupMaterial(m_materials[g_menu.main.players.chams_enemy_history_mat.get()], g_menu.main.players.chams_enemy_history_col.get(), true);
+
+
 		// was the matrix properly setup?
-		if (data->m_records.back().get() && !data->m_records.back().get()->valid()) {
+		if (data->m_records.back().get()) {
 
-			// override blend.
-			SetAlpha(g_menu.main.players.chams_enemy_history_blend.get() / 100.f);
-
-			// set material and color.
-			SetupMaterial(m_materials[g_menu.main.players.chams_enemy_history_mat.get()], g_menu.main.players.chams_enemy_history_col.get(), true);
 
 			// backup the bone cache before we fuck with it.
 			auto backup_bones = player->m_BoneCache().m_pCachedBones;

@@ -1,7 +1,7 @@
 #pragma once
 
 #define SLIDER_X_OFFSET 0
-#define SLIDER_HEIGHT	12
+#define SLIDER_HEIGHT	13
 
 class Slider : public Element {
 public:

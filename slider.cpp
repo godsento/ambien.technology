@@ -43,7 +43,7 @@ void Slider::draw() {
 
 	// draw value.
 	render::FontSize_t t = render::menu_shade.wsize(ss.str());
-	render::menu_shade.wstring(p.x + SLIDER_X_OFFSET + 1 + ((m_w - SLIDER_X_OFFSET - 2) / 2) - (t.m_width / 2), p.y - 1 + m_offset, { 255, 255, 255, m_parent->m_alpha }, ss.str());
+	render::menu_shade.wstring(p.x + SLIDER_X_OFFSET + 1 + ((m_w - SLIDER_X_OFFSET - 2) / 2) - (t.m_width / 2), p.y  + m_offset, { 255, 255, 255, m_parent->m_alpha }, ss.str());
 
 	//render::rect( p.x, p.y, m_w, m_pos.h, { 255, 0, 0 } );
 }

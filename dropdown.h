@@ -4,7 +4,7 @@
 #define DROPDOWN_ITEM_X_OFFSET	10
 #define DROPDOWN_ITEM_Y_OFFSET	5
 #define DROPDOWN_BOX_HEIGHT		20
-#define DROPDOWN_ITEM_HEIGHT	20
+#define DROPDOWN_ITEM_HEIGHT	15
 #define DROPDOWN_SEPARATOR		2
 
 class Dropdown : public Element {
@@ -68,8 +68,11 @@ public:
 protected:
 	bool					   m_open;
 	std::vector< std::string > m_items;
+	float m_anim_per_items[128];
+	float m_anim_per_items_last_frame[128];
 	float					   m_anim_height;
 	size_t					   m_active_item;
+	float                      time_active;
 	int						   m_offset;
 
 private:

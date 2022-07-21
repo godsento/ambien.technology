@@ -66,27 +66,35 @@ void MultiDropdown::draw() {
 				// get offset to current item.
 				int item_offset = (i * DROPDOWN_ITEM_HEIGHT);
 
-				// has this item been animated yet?
-				if (m_anim_height > item_offset) {
-					// check.
-					bool active = std::find(m_active_items.begin(), m_active_items.end(), i) != m_active_items.end();
 
-					// yet again, it won't use list init inside the ternary conditional.
-					render::menu.string(p.x + DROPDOWN_X_OFFSET + DROPDOWN_ITEM_X_OFFSET, p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset,
-						active ? color : Color{ 152, 152, 152, m_parent->m_alpha },
-						m_items[i]);
+				// check.
+				bool active = std::find(m_active_items.begin(), m_active_items.end(), i) != m_active_items.end();
+
+				m_anim_per_items[i] = (active) ? 1.f : 0.f;
+
+				if (m_anim_per_items[i] != m_anim_per_items_last_frame[i]) {
+
+					if (m_anim_per_items[i] > m_anim_per_items_last_frame[i])
+						m_anim_per_items_last_frame[i] += g_csgo.m_globals->m_frametime * 4;
+					else if (m_anim_per_items[i] < m_anim_per_items_last_frame[i])
+						m_anim_per_items_last_frame[i] -= g_csgo.m_globals->m_frametime * 4;
 				}
+
+				// yet again, it won't use list init inside the ternary conditional.
+				render::menu.string(p.x + 8 + std::round(8 * m_anim_per_items_last_frame[i]), p.y + m_offset + DROPDOWN_BOX_HEIGHT + DROPDOWN_ITEM_Y_OFFSET + item_offset,
+					active ? color : Color{ 152, 152, 152, m_parent->m_alpha },
+					m_items[i]);
 			}
 		}
 
 		// no items.
 		if (!m_active_items.size()) {
-			render::menu.string(p.x + DROPDOWN_X_OFFSET + 5, p.y + m_offset + 2, { 152, 152, 152, m_parent->m_alpha }, XOR("none"));
+			render::menu.string(p.x + 8, p.y + m_offset + 2, { 152, 152, 152, m_parent->m_alpha }, XOR("none"));
 
 		}
 		// one item.
 		else if (m_active_items.size() == 1) {
-			render::menu.string(p.x + DROPDOWN_X_OFFSET + 5, p.y + m_offset + 2, { 152, 152, 152, m_parent->m_alpha }, m_items[m_active_items.front()]);
+			render::menu.string(p.x + 8, p.y + m_offset + 2, { 152, 152, 152, m_parent->m_alpha }, m_items[m_active_items.front()]);
 
 		}
 
@@ -124,7 +132,7 @@ void MultiDropdown::draw() {
 void MultiDropdown::think() {
 	// fucker can be opened.
 	if (!m_items.empty()) {
-		int total_size = DROPDOWN_ITEM_HEIGHT * m_items.size();
+		int total_size = DROPDOWN_ITEM_HEIGHT * m_items.size() + 3;
 
 		// we need to travel 'total_size' in 300 ms.
 		float frequency = total_size / 0.3f;

@@ -274,6 +274,7 @@ void Client::DoMove( ) {
 	}
 	g_movement.AutoPeek(g_cl.m_cmd, m_strafe_angles.y);
 	g_movement.AutoStop();
+//	g_movement.FastStop();
 
 	// predict input.
 	g_inputpred.run( );
@@ -332,6 +333,7 @@ void Client::DoMove( ) {
 		m_weapon_fire = CanFireWeapon( );
 	}
 
+	int updated_this_tick = 0;
 
 	for (int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i) {
 		Player* player = g_csgo.m_entlist->GetClientEntity< Player* >(i);
@@ -349,8 +351,17 @@ void Client::DoMove( ) {
 		if (!data->m_records.front().get()->valid())
 			continue;
 
-		if (std::abs(data->m_last_freestand_scan - player->m_flSimulationTime()) > g_cl.get_fps() <= 90 ? 5.f : 1.1f)
-			g_lagcomp.collect_awall_shit(data);
+		if (player->m_flSimulationTime() < data->m_last_freestand_scan)
+			continue;
+
+		if (updated_this_tick > 0) {
+			data->m_last_freestand_scan = player->m_flSimulationTime() + 0.3f; // delay it so it doesnt rape our fps (here its 300ms?)
+			continue;
+		}
+
+		++updated_this_tick;
+		data->m_last_freestand_scan = player->m_flSimulationTime() + (g_cl.get_fps() <= 90 ? 3.f : 1.f);
+;		g_lagcomp.collect_awall_shit(data);
 	}
 
 	// run k
@@ -369,16 +380,25 @@ void Client::DoMove( ) {
 		if( dt <= game::TICKS_TO_TIME( 2 ) )
 			m_cmd->m_buttons |= IN_USE;
 	}
+	
+	/*
+	// run fakelag.
+	g_hvh.SendPacket();
+
+	// run aimbot.
+	g_aimbot.think();
+
+	// run antiaims.
+	g_hvh.AntiAim();
+	*/
+
 
 	// grenade prediction.
-	g_grenades.think( );
+	g_grenades.think();
+
 
 	if (!g_tickshift.m_shifting) {
-		// Task for the reader: Maybe we want to do a few things during our teleport (i.e. bhop, autostrafe, etc.)
-		//if (!g_menu.main.aimbot.slow_teleport.get()) {
-		//	g_cl.m_cmd->m_side_move = 0;
-		//	g_cl.m_cmd->m_forward_move = 0;
-		//}
+
 		// run fakelag.
 		g_hvh.SendPacket();
 
@@ -642,7 +662,7 @@ void Client::UpdateInformation( ) {
 	m_anim_time = g_csgo.m_globals->m_curtime;
 
 	// fix landing anim.
-	if( state->m_land && !state->m_dip_air && state->m_dip_cycle > 0.f )
+	if( state->m_land && g_cl.m_ground && g_cl.m_flags & FL_ONGROUND )
 		m_angle.x = -12.f;
 
 	// write angles to model.

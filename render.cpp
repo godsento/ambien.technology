@@ -4,6 +4,7 @@ namespace render {
 	Font menu;;
 	Font menu_shade;;
 	Font bold;;
+	Font bold2;;
 	Font norm;;
 	Font undefeatedd;;
 	Font esp;;
@@ -16,9 +17,10 @@ namespace render {
 void render::init( ) {
 	AddFontMemResourceEx((void*)undefeated, sizeof(undefeated), nullptr, &g_hooks.undefeated2);
 	undefeatedd = Font(XOR("undefeated"), 24, FW_MEDIUM, FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW);
-	menu = Font(XOR("Segoe UI"), 14, FW_NORMAL, FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW);
-	menu_shade = Font(XOR("Segoe UI"), 14, FW_NORMAL, FONTFLAG_ANTIALIAS | FONTFLAG_DROPSHADOW);
+	menu = Font(XOR("Tahoma"), 12, FW_NORMAL, FONTFLAG_OUTLINE);
+	menu_shade = Font(XOR("Tahoma"), 12, FW_NORMAL, FONTFLAG_OUTLINE);
 	bold = Font(XOR("Tahoma Bold"), 12, FW_MEDIUM, FONTFLAG_DROPSHADOW);
+	bold2 = Font(XOR("Tahoma Bold"), 12, FW_MEDIUM, FONTFLAG_NONE);
 	norm = Font(XOR("Tahoma"), 12, FW_NORMAL, FONTFLAG_DROPSHADOW);
 	esp        = Font( XOR( "Verdana" ), 12, FW_BOLD, FONTFLAG_DROPSHADOW );
 	esp_small  = Font( XOR( "Small Fonts" ), 8, FW_NORMAL, FONTFLAG_OUTLINE );

@@ -56,6 +56,7 @@ namespace render {
 	extern Font menu;
 	extern Font menu_shade;
 	extern Font bold;;
+	extern Font bold2;;
 	extern Font norm;;
 	extern Font undefeatedd;;
 	extern Font esp;

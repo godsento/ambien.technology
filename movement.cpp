@@ -535,10 +535,13 @@ void Movement::AutoStop() {
 		return;
 
 
-	if (!g_menu.main.aimbot.auto_stop.get())
+	if (g_menu.main.aimbot.auto_stop.get() == 0)
 		return;
+	 
+	if (g_menu.main.aimbot.auto_stop.get() == 2)
+		AutoStop_Alt();
 
-	auto max_speed = (g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed) / 3;
+	auto max_speed = (g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed); /// 3;
 
 
 	if (g_menu.main.aimbot.auto_stop.get() == 1)
@@ -547,10 +550,10 @@ void Movement::AutoStop() {
 	g_aimbot.m_stop = false;
 
 	if (g_cl.m_ground) {
-		if (g_cl.m_local->m_vecVelocity().length_2d() < max_speed)  {
+		if (g_cl.m_local->m_vecVelocity().length_2d() < max_speed / 3)  {
 			// get the max possible speed whilest we are still accurate.
 			float flMaxSpeed = g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed;
-			float flDesiredSpeed = (max_speed);
+			float flDesiredSpeed = (max_speed / 3);
 
 			if (g_menu.main.aimbot.auto_stop.get() == 1) {
 				g_cl.m_cmd->m_forward_move = 0.f;
@@ -595,7 +598,7 @@ void Movement::AutoStop() {
 
 			float accel = g_csgo.m_cvar->FindVar(HASH("sv_accelerate"))->GetFloat();
 			float playerSurfaceFriction = g_cl.m_local->m_surfaceFriction();
-			float max_accelspeed = accel * g_csgo.m_globals->m_interval * max_speed * playerSurfaceFriction;
+			float max_accelspeed = accel * g_csgo.m_globals->m_interval * (max_speed / 3) * playerSurfaceFriction;
 
 			if (g_cl.m_local->m_vecVelocity().length_2d() - max_accelspeed <= -1.f)
 				g_cl.m_cmd->m_forward_move = g_cl.m_local->m_vecVelocity().length_2d() / max_accelspeed;
@@ -742,6 +745,65 @@ void Movement::FakeWalk( ) {
 			else {
 				g_cl.m_cmd->m_side_move = g_cl.m_cmd->m_forward_move = 0;
 			}
+		}
+	}
+}
+
+
+void Movement::AutoStop_Alt() {
+	if (!g_cl.m_cmd || !g_cl.m_local || !g_cl.m_local->alive())
+		return;
+
+	// don't fake movement while noclipping or on ladders..
+	if (!g_cl.m_weapon || g_cl.m_local->m_MoveType() == MOVETYPE_NOCLIP || g_cl.m_local->m_MoveType() == MOVETYPE_LADDER)
+		return;
+
+	if (!(g_cl.m_local->m_fFlags() & FL_ONGROUND))
+		return;
+
+	if (g_cl.m_cmd->m_buttons & IN_JUMP || !g_aimbot.m_stop)
+		return;
+
+	if (!g_cl.m_weapon_info)
+		return;
+
+	auto max_speed = (g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed) / 3;
+
+	g_aimbot.m_stop = false;
+
+	if (g_cl.m_ground && !g_input.GetKeyState(g_menu.main.misc.fakewalk.get())) {
+		if (g_cl.m_local->m_vecVelocity().length_2d() < max_speed) {
+			// get the max possible speed whilest we are still accurate.
+			float flMaxSpeed = g_cl.m_local->m_bIsScoped() > 0 ? g_cl.m_weapon_info->m_max_player_speed_alt : g_cl.m_weapon_info->m_max_player_speed;
+			float flDesiredSpeed = (flMaxSpeed / 3);
+
+			ClampMovementSpeed(flDesiredSpeed);
+		}
+		else {
+			vec3_t Velocity = g_cl.m_local->m_vecVelocity();
+
+			ang_t direction;
+			ang_t real_view = g_cl.m_cmd->m_view_angles;
+
+			math::VectorAngles(Velocity, direction);
+			g_csgo.m_engine->GetViewAngles(real_view);
+
+			direction.y = real_view.y - direction.y;
+
+			vec3_t forward;
+			math::AngleVectors(direction, &forward);
+
+			static auto cl_forwardspeed = g_csgo.m_cvar->FindVar(HASH("cl_forwardspeed"));
+			static auto cl_sidespeed = g_csgo.m_cvar->FindVar(HASH("cl_sidespeed"));
+
+			auto negative_forward_speed = -cl_forwardspeed->GetFloat();
+			auto negative_side_speed = -cl_sidespeed->GetFloat();
+
+			auto negative_forward_direction = forward * negative_forward_speed;
+			auto negative_side_direction = forward * negative_side_speed;
+
+			g_cl.m_cmd->m_forward_move = negative_forward_direction.x;
+			g_cl.m_cmd->m_side_move = negative_side_direction.y;
 		}
 	}
 }

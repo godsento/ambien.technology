@@ -149,6 +149,7 @@ public:
 
 	// fake latency stuff.
 	bool       m_fake_latency;
+	bool       damage_override;
 
 	bool m_stop;
 
@@ -194,6 +195,7 @@ public:
 	// aimbot.
 	void init( );
 	void StripAttack( );
+	void handle_targets();
 	void think( );
 	void find( );
 	bool CanHit(const vec3_t start, const vec3_t end, LagRecord* animation, int box, bool in_shot, BoneArray* bones);

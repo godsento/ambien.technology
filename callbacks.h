@@ -69,6 +69,7 @@ namespace callbacks {
 	bool IsChamsSelection7();
 	bool FakeGlowChamsSelection();
 	void ToggleDoubletap();
+	void ToggleDamage();
 	// weapon cfgs.
 	bool DEAGLE( );
 	bool ELITE( );

@@ -36,13 +36,10 @@ public:
 	Slider		  mindmg_default;
 
 	Checkbox	  penetrate;
-	Checkbox      knifebot;
-	Checkbox	  zeusbot;
+	Checkbox	  scale_dmg;
 
 	// col2.
 	Dropdown      zoom;
-	Checkbox      nospread;
-	Checkbox      norecoil;
 
 	Slider	      hitchance_auto;
 	Slider	      hitchance_scout;
@@ -65,6 +62,10 @@ public:
 
 	MultiDropdown fps;
 
+	Dropdown      dmg_override_mode;
+	Slider        dmg_override_amount;
+	Keybind       dmg_override;
+
 public:
 	void init( ) {
 		// title.
@@ -76,10 +77,10 @@ public:
 		silent.setup( XOR( "silent aimbot" ), XOR( "silent" ) );
 		RegisterElement( &silent );
 
-		fps.setup(XOR("on low fps"), XOR("fps"), { "lower hit chance precision", "disable feet multipoints", "disable legs multipoints", "disable arm multipoints" });
+		fps.setup(XOR("on low fps"), XOR("fps"), { "lower hit chance precision", "disable feet multipoints", "disable legs multipoints", "disable arms multipoints" });
 		RegisterElement(&fps);
 
-		selection.setup( XOR( "target selection" ), XOR( "selection" ), { XOR( "distance" ), XOR( "crosshair" ), XOR( "damage" ), XOR( "health" ), XOR( "lag" ), XOR( "height" ) } );
+		selection.setup( XOR( "target selection" ), XOR( "selection" ), { XOR("distance"), XOR("crosshair"), XOR("health") });
 		RegisterElement( &selection );
 
 		gun_selection.setup(XOR("weapon"), XOR("weapon_selection"), { XOR("auto"),XOR("scout"),XOR("awp"),XOR("default") });
@@ -87,36 +88,36 @@ public:
 
 
 
-		hitbox_auto.setup( XOR( "hitbox" ), XOR( "hitbox_auto" ), { XOR( "head" ), XOR( "chest" ), XOR( "body" ), XOR( "arms" ), XOR( "legs" ) } );
+		hitbox_auto.setup( XOR( "hitbox" ), XOR( "hitbox_auto" ), { XOR( "head" ), XOR( "chest" ), XOR( "stomach" ), XOR( "arms" ), XOR( "legs" ), XOR("feet") });
 		hitbox_auto.AddShowCallback(callbacks::IsAutoSelected);
 		RegisterElement( &hitbox_auto);
 
-		hitbox_scout.setup(XOR("hitbox"), XOR("hitbox_scout"), { XOR("head"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs") });
+		hitbox_scout.setup(XOR("hitbox"), XOR("hitbox_scout"), { XOR("head"), XOR("chest"), XOR("stomach"), XOR("arms"), XOR("legs"), XOR("feet") });
 		hitbox_scout.AddShowCallback(callbacks::IsScoutSelected);
 		RegisterElement(&hitbox_scout);
 
-		hitbox_awp.setup(XOR("hitbox"), XOR("hitbox_awp"), { XOR("head"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs") });
+		hitbox_awp.setup(XOR("hitbox"), XOR("hitbox_awp"), { XOR("head"), XOR("chest"), XOR("stomach"), XOR("arms"), XOR("legs"), XOR("feet") });
 		hitbox_awp.AddShowCallback(callbacks::IsAwpSelected);
 		RegisterElement(&hitbox_awp);
 
-		hitbox_default.setup(XOR("hitbox"), XOR("hitbox_default"), { XOR("head"), XOR("chest"), XOR("body"), XOR("arms"), XOR("legs") });
+		hitbox_default.setup(XOR("hitbox"), XOR("hitbox_default"), { XOR("head"), XOR("chest"), XOR("stomach"), XOR("arms"), XOR("legs"), XOR("feet") });
 		hitbox_default.AddShowCallback(callbacks::IsDefaultSelected);
 		RegisterElement(&hitbox_default);
 
 
-		multipoint_auto.setup( XOR( "multi-point" ), XOR( "multipoint_auto" ), { XOR( "head" ), XOR( "chest" ), XOR( "body" ), XOR( "legs" ) } );
+		multipoint_auto.setup( XOR( "multi-point" ), XOR( "multipoint_auto" ), { XOR( "head" ), XOR( "chest" ), XOR( "stomach" ), XOR( "legs" ) , XOR("feet") });
 		multipoint_auto.AddShowCallback(callbacks::IsAutoSelected);
 		RegisterElement( &multipoint_auto);
 
-		multipoint_scout.setup(XOR("multi-point"), XOR("multipoint_scout"), { XOR("head"), XOR("chest"), XOR("body"), XOR("legs") });
+		multipoint_scout.setup(XOR("multi-point"), XOR("multipoint_scout"), { XOR("head"), XOR("chest"), XOR("stomach"), XOR("legs") , XOR("feet") });
 		multipoint_scout.AddShowCallback(callbacks::IsScoutSelected);
 		RegisterElement(&multipoint_scout);
 
-		multipoint_awp.setup(XOR("multi-point"), XOR("multipoint_awp"), { XOR("head"), XOR("chest"), XOR("body"), XOR("legs") });
+		multipoint_awp.setup(XOR("multi-point"), XOR("multipoint_awp"), { XOR("head"), XOR("chest"), XOR("stomach"), XOR("legs") , XOR("feet") });
 		multipoint_awp.AddShowCallback(callbacks::IsAwpSelected);
 		RegisterElement(&multipoint_awp);
 
-		multipoint_default.setup(XOR("multi-point"), XOR("multipoint_default"), { XOR("head"), XOR("chest"), XOR("body"), XOR("legs") });
+		multipoint_default.setup(XOR("multi-point"), XOR("multipoint_default"), { XOR("head"), XOR("chest"), XOR("stomach"), XOR("legs") , XOR("feet") });
 		multipoint_default.AddShowCallback(callbacks::IsDefaultSelected);
 		RegisterElement(&multipoint_default);
 
@@ -152,43 +153,43 @@ public:
 		body_scale_default.AddShowCallback(callbacks::IsDefaultSelected);
 		RegisterElement(&body_scale_default);
 
-		mindmg_auto.setup(XOR("minimal damage"), XOR("mindmg_auto"), 1.f, 100.f, true, 0, 40.f, 1.f);
+		mindmg_auto.setup(XOR("minimal damage"), XOR("mindmg_auto"), 1.f, 126.f, true, 0, 40.f, 1.f);
 		mindmg_auto.AddShowCallback(callbacks::IsAutoSelected);
 		RegisterElement(&mindmg_auto);
 
-		mindmg_scout.setup(XOR("minimal damage"), XOR("mindmg_scout"), 1.f, 100.f, true, 0, 40.f, 1.f);
+		mindmg_scout.setup(XOR("minimal damage"), XOR("mindmg_scout"), 1.f, 126.f, true, 0, 40.f, 1.f);
 		mindmg_scout.AddShowCallback(callbacks::IsScoutSelected);
 		RegisterElement(&mindmg_scout);
 
-		mindmg_awp.setup(XOR("minimal damage"), XOR("mindmg_awp"), 1.f, 100.f, true, 0, 40.f, 1.f);
+		mindmg_awp.setup(XOR("minimal damage"), XOR("mindmg_awp"), 1.f, 126.f, true, 0, 40.f, 1.f);
 		mindmg_awp.AddShowCallback(callbacks::IsAwpSelected);
 		RegisterElement(&mindmg_awp);
 
-		mindmg_default.setup(XOR("minimal damage"), XOR("mindmg_default"), 1.f, 100.f, true, 0, 40.f, 1.f);
+		mindmg_default.setup(XOR("minimal damage"), XOR("mindmg_default"), 1.f, 126.f, true, 0, 40.f, 1.f);
 		mindmg_default.AddShowCallback(callbacks::IsDefaultSelected);
 		RegisterElement(&mindmg_default);
 
-		penetrate.setup( XOR( "penetrate walls" ), XOR( "penetrate" ) );
+		penetrate.setup( XOR( "auto wall" ), XOR( "penetrate" ) );
 		RegisterElement( &penetrate );
 
-		knifebot.setup( XOR( "aimbot with knife" ), XOR( "knifebot" ) );
-		RegisterElement( &knifebot );
+		scale_dmg.setup(XOR("adaptive min damage"), XOR("scale_dmg"));
+		RegisterElement(&scale_dmg);
 
-		zeusbot.setup( XOR( "aimbot with taser" ), XOR( "zeusbot" ) );
-		RegisterElement( &zeusbot );
+		dmg_override.setup(XOR("damage override"), XOR("damage"));
+		dmg_override.SetToggleCallback(callbacks::ToggleDamage);
+		RegisterElement(&dmg_override);
+
+		dmg_override_mode.setup(XOR("override mode"), XOR("dmg_override_mode"), { XOR("hold"), XOR("toggle") }, false);
+		RegisterElement(&dmg_override_mode);
+
+		dmg_override_amount.setup(XOR(""), XOR("dmg_override_amount"), 1.f, 126.f, false, 0, 40.f, 1.f);
+		RegisterElement(&dmg_override_amount);
 
 		// col2.
 		zoom.setup( XOR( "auto scope" ), XOR( "zoom" ), { XOR( "off" ), XOR( "always" ), XOR( "hitchance fail" ) } );
 		RegisterElement( &zoom, 1 );
 
-		nospread.setup( XOR( "compensate spread" ), XOR( "nospread" ) );
-		nospread.AddShowCallback( callbacks::IsConfigNS );
-		RegisterElement( &nospread, 1 );
-
-		norecoil.setup( XOR( "compensate recoil" ), XOR( "norecoil" ) );
-		RegisterElement( &norecoil, 1 );
-
-		auto_stop.setup(XOR("auto stop"), XOR("autostop"), { XOR("off"), XOR("full"), XOR("minimal") });
+		auto_stop.setup(XOR("auto stop"), XOR("auto_stop"), { XOR("off"), XOR("full"), XOR("minimal"), "alternative"});
 		RegisterElement(&auto_stop, 1);
 
 		auto_stop_between.setup(XOR("auto stop between shots"), XOR("auto_stop_between"));
@@ -217,28 +218,31 @@ public:
 		hitchance_mode.setup(XOR("hit chance mode"), XOR("hcmode"), { XOR("default"), XOR("experimental") });
 		RegisterElement(&hitchance_mode, 1);
 
-		lagfix.setup( XOR( "predict fake-lag" ), XOR( "lagfix" ) );
+		lagfix.setup( XOR( "break lagcomp extrapolation" ), XOR( "lagfix" ) );
 		RegisterElement( &lagfix, 1 );
 
-		correct.setup( XOR( "correct anti-aim" ), XOR( "correct" ) );
+		correct.setup( XOR( "anti-aim correction" ), XOR( "correct" ) );
 		RegisterElement( &correct, 1 );
 
-		baim1.setup( XOR( "prefer body aim" ), XOR( "baim1" ), { XOR( "always" ), XOR( "fake" ), XOR( "in air" ) } );
+		baim1.setup( XOR( "prefer body-aim" ), XOR( "baim1" ), { XOR( "always" ), XOR( "fake" ), XOR( "in air" ) } );
 		RegisterElement( &baim1, 1 );
 
-		baim2.setup( XOR( "only body aim" ), XOR( "baim2" ), { XOR( "always" ), XOR( "health" ), XOR( "fake" ), XOR( "in air" ) } );
+		baim2.setup( XOR( "force body-aim" ), XOR( "baim2" ), { XOR( "always" ), XOR( "health" ), XOR( "fake" ), XOR( "in air" ) } );
 		RegisterElement( &baim2, 1 );
 
-		baim_hp.setup( "", XOR( "baim_hp" ), 1.f, 50.f, false, 0, 20.f, 1.f, XOR( L"hp" ) );
+		baim_hp.setup( "", XOR( "baim_hp" ), 1.f, 90.f, false, 0, 20.f, 1.f, XOR( L"hp" ) );
 		baim_hp.AddShowCallback( callbacks::IsBaimHealth );
 		RegisterElement( &baim_hp, 1 );
 
-		baim_key.setup( XOR( "body aim on key" ), XOR( "body aim on key" ) );
+		baim_key.setup( XOR( "force body-aim on key" ), XOR( "body aim on key" ) );
 		RegisterElement( &baim_key, 1 );
 
 		double_tap.setup(XOR("double tap"), XOR("doubletap"));
 		double_tap.SetToggleCallback(callbacks::ToggleDoubletap);
 		RegisterElement(&double_tap,1);
+
+
+
 	}
 };
 
@@ -2022,7 +2026,7 @@ public:
 	Slider   desync_ticks;
 	Checkbox safe_desync;
 	Keybind  autopeek;
-	Checkbox  autostop;
+	Dropdown  autostop;
 
 public:
 	void init( ) {
@@ -2118,7 +2122,7 @@ public:
 		autopeek.setup(XOR("auto peek"), XOR("autopeek"));
 		RegisterElement(&autopeek, 1);
 
-		autostop.setup(XOR("auto stop"), XOR("autostop"));
+		autostop.setup(XOR("standalone quick stop"), XOR("autostop"), { XOR("off"), XOR("normal"), XOR("experimental") });
 		RegisterElement(&autostop,1);
 
 		motion_blur.setup(XOR("motion blur"), XOR("blur_value"), 0.f, 20.f, true, 0, 1.f, 1, XOR(L"%"));

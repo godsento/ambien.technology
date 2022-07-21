@@ -2,18 +2,19 @@
 
 Aimbot g_aimbot{ };;
 
-void AimPlayer::UpdateAnimations( LagRecord *record ) {
-	CCSGOPlayerAnimState *state = m_player->m_PlayerAnimState( );
-	if ( !state )
+
+void AimPlayer::UpdateAnimations(LagRecord* record) {
+	CCSGOPlayerAnimState* state = m_player->m_PlayerAnimState();
+	if (!state)
 		return;
 
 	// player respawned.
-	if ( m_player->m_flSpawnTime( ) != m_spawn ) {
+	if (m_player->m_flSpawnTime() != m_spawn) {
 		// reset animation state.
-		game::ResetAnimationState( state );
+		game::ResetAnimationState(state);
 
 		// note new spawn time.
-		m_spawn = m_player->m_flSpawnTime( );
+		m_spawn = m_player->m_flSpawnTime();
 	}
 
 	// backup curtime.
@@ -28,51 +29,125 @@ void AimPlayer::UpdateAnimations( LagRecord *record ) {
 	// backup stuff that we do not want to fuck with.
 	AnimationBackup_t backup;
 
-	backup.m_origin = m_player->m_vecOrigin( );
-	backup.m_abs_origin = m_player->GetAbsOrigin( );
-	backup.m_velocity = m_player->m_vecVelocity( );
-	backup.m_abs_velocity = m_player->m_vecAbsVelocity( );
-	backup.m_flags = m_player->m_fFlags( );
-	backup.m_eflags = m_player->m_iEFlags( );
-	backup.m_duck = m_player->m_flDuckAmount( );
-	backup.m_body = m_player->m_flLowerBodyYawTarget( );
-	m_player->GetAnimLayers( backup.m_layers );
+	backup.m_origin = m_player->m_vecOrigin();
+	backup.m_abs_origin = m_player->GetAbsOrigin();
+	backup.m_velocity = m_player->m_vecVelocity();
+	backup.m_abs_velocity = m_player->m_vecAbsVelocity();
+	backup.m_flags = m_player->m_fFlags();
+	backup.m_eflags = m_player->m_iEFlags();
+	backup.m_duck = m_player->m_flDuckAmount();
+	backup.m_body = m_player->m_flLowerBodyYawTarget();
+	m_player->GetAnimLayers(backup.m_layers);
 
 	// is player a bot?
-	bool bot = game::IsFakePlayer( m_player->index( ) );
+	bool bot = game::IsFakePlayer(m_player->index());
 
 	// reset fakewalk state.
 	record->m_fake_walk = false;
 	record->m_mode = Resolver::Modes::RESOLVE_NONE;
 
-	// fix velocity.
-	// https://github.com/VSES/SourceEngine2007/blob/master/se2007/game/client/c_baseplayer.cpp#L659
-	if ( record->m_lag > 0 && record->m_lag < 16 && m_records.size( ) >= 2 ) {
-		// get pointer to previous record.
-		LagRecord *previous = m_records[ 1 ].get( );
-
-		if ( previous && !previous->dormant( ) )
-			record->m_velocity = ( record->m_origin - previous->m_origin ) * ( 1.f / game::TICKS_TO_TIME( record->m_lag ) );
-	}
-
-	// set this fucker, it will get overriden.
-	record->m_anim_velocity = record->m_velocity;
-
-	if (record->m_lag > 0 && m_records.size() >= 2) {
+	if (m_records.size() >= 2) {
 		// get pointer to previous record.
 		LagRecord* previous = m_records[1].get();
 
-		if (previous && !previous->dormant()) {
+		if (previous && previous->valid() ) {
+
+			auto e = m_player;
+			vec3_t velocity = m_player->m_vecVelocity();
+			bool was_in_air = (m_player->m_fFlags() & FL_ONGROUND) && (previous->m_flags & FL_ONGROUND);
+
+			auto time_difference = std::max(g_csgo.m_globals->m_interval, m_player->m_flSimulationTime() - previous->m_sim_time);
+			auto origin_delta = m_player->m_vecOrigin() - previous->m_origin;
+
+			auto animation_speed = 0.0f;
+
+			if (!origin_delta.IsZero() && game::TIME_TO_TICKS(time_difference) > 0)
+			{
+				m_player->m_vecVelocity() = origin_delta * (1.0f / time_difference);
+
+				if (m_player->m_fFlags() & FL_ONGROUND && record->m_layers[11].m_weight > 0.0f && record->m_layers[11].m_weight < 1.0f && record->m_layers[11].m_cycle > previous->m_layers[11].m_cycle)
+				{
+					auto weapon = m_player->m_hActiveWeapon().Get();
+
+					if (weapon)
+					{
+						auto max_speed = 260.0f;
+						auto weapon_info = e->GetActiveWeapon()->GetWpnData();
+
+						if (weapon_info)
+							max_speed = m_player->m_bIsScoped() ? weapon_info->m_max_player_speed_alt : weapon_info->m_max_player_speed;
+
+						auto modifier = 0.35f * (1.0f - record->m_layers[11].m_weight);
+
+						if (modifier > 0.0f && modifier < 1.0f)
+							animation_speed = max_speed * (modifier + 0.55f);
+					}
+				}
+
+				if (animation_speed > 0.0f)
+				{
+					animation_speed /= m_player->m_vecVelocity().length_2d();
+
+					m_player->m_vecVelocity().x *= animation_speed;
+					m_player->m_vecVelocity().y *= animation_speed;
+				}
+
+				if (m_records.size() >= 3 && time_difference > g_csgo.m_globals->m_interval)
+				{
+					auto previous_velocity = (previous->m_origin - m_records[2].get()->m_origin) * (1.0f / time_difference);
+
+					if (!previous_velocity.IsZero() && !was_in_air)
+					{
+						auto current_direction = math::NormalizedAngle(math::rad_to_deg(atan2(m_player->m_vecVelocity().y, m_player->m_vecVelocity().x)));
+						auto previous_direction = math::NormalizedAngle(math::rad_to_deg(atan2(previous_velocity.y, previous_velocity.x)));
+
+						auto average_direction = current_direction - previous_direction;
+						average_direction = math::deg_to_rad(math::NormalizedAngle(current_direction + average_direction * 0.5f));
+
+						auto direction_cos = cos(average_direction);
+						auto dirrection_sin = sin(average_direction);
+
+						auto velocity_speed = m_player->m_vecVelocity().length_2d();
+
+						m_player->m_vecVelocity().x = direction_cos * velocity_speed;
+						m_player->m_vecVelocity().y = dirrection_sin * velocity_speed;
+					}
+				}
+
+				if (!(m_player->m_fFlags() & FL_ONGROUND))
+				{
+
+
+					auto fixed_timing = std::clamp(time_difference, g_csgo.m_globals->m_interval, 1.0f);
+					m_player->m_vecVelocity().z -= g_csgo.sv_gravity->GetFloat() * fixed_timing * 0.5f;
+				}
+				else
+					m_player->m_vecVelocity().z = 0.0f;
+			}
+
+			m_player->m_iEFlags() &= ~0x1800;
+
+			if (m_player->m_fFlags() & FL_ONGROUND && m_player->m_vecVelocity().length() > 0.0f && record->m_layers[6].m_weight <= 0.0f)
+				m_player->m_vecVelocity() = vec3_t(0, 0, 0);
+
+			record->m_anim_velocity = m_player->m_vecAbsVelocity() = m_player->m_vecVelocity();
+
+			bool two_tick_ground = (m_player->m_fFlags() & FL_ONGROUND) && (previous->m_flags & FL_ONGROUND);
+
 			//https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/player_lagcompensation.cpp#L462-L467
-			record->m_broke_lc = (record->m_origin - previous->m_origin).length_2d_sqr() > 4096.f && !(m_player->m_fFlags() & FL_ONGROUND); // was length_sqr but game uses 2d
+			record->m_broke_lc = (record->m_origin - previous->m_origin).length_2d_sqr() > 4096.f && !two_tick_ground;
+
+			// lagcompensation time
+			// https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/player_lagcompensation.cpp#L504
+			record->m_lag_time = record->m_sim_time - previous->m_sim_time;
 		}
 	}
 
 	// fix various issues with the game eW91dHViZS5jb20vZHlsYW5ob29r
 	// these issues can only occur when a player is choking data.
-	if ( record->m_lag > 1 && !bot ) {
+	if (record->m_lag > 1) {
 		// detect fakewalk.
-		float speed = record->m_velocity.length( );
+		float speed = record->m_velocity.length();
 
 		if (record->m_flags & FL_ONGROUND
 			&& record->m_layers[4].m_weight == 0.0f
@@ -82,34 +157,48 @@ void AimPlayer::UpdateAnimations( LagRecord *record ) {
 			record->m_fake_walk = true;
 
 		if (record->m_fake_walk)
-			record->m_anim_velocity = record->m_velocity = { 0.f, 0.f, 0.f };
+			record->m_velocity = record->m_anim_velocity = m_player->m_vecAbsVelocity() = m_player->m_vecVelocity() = { 0.f, 0.f, 0.f };
 
 		// we need atleast 2 updates/records
 		// to fix these issues.
-		if ( m_records.size( ) >= 2 ) {
+		if (m_records.size() >= 2) {
 			// get pointer to previous record.
-			LagRecord *previous = m_records[ 1 ].get( );
+			LagRecord* previous = m_records[1].get();
 
-			if ( previous && !previous->dormant( ) ) {
-				// set previous flags.
-				m_player->m_fFlags( ) = previous->m_flags;
+			if (previous && !previous->valid()) {
 
-				// strip the on ground flag.
-				m_player->m_fFlags( ) &= ~FL_ONGROUND;
+				bool _bOnGround = record->m_flags & FL_ONGROUND;
+				float _m_flTime = previous->m_sim_time + g_csgo.m_globals->m_interval;
 
-				// been onground for 2 consecutive ticks? fuck yeah.
-				if ( record->m_flags & FL_ONGROUND && previous->m_flags & FL_ONGROUND )
-					m_player->m_fFlags( ) |= FL_ONGROUND;
+				if (record->m_lag > 2) {
 
-				//if( record->m_layers[ 4 ].m_weight != 0.f && previous->m_layers[ 4 ].m_weight == 0.f && record->m_layers[ 5 ].m_weight != 0.f )
-				//	m_player->m_fFlags( ) |= FL_ONGROUND;
+					float flLandTime = 0.0f;
+					bool bJumped = false;
+					bool bLandedOnServer = false;
+					if (record->m_layers[4].m_cycle < 0.5f && (!(record->m_flags & FL_ONGROUND) || !(previous->m_flags & FL_ONGROUND))) {
+						flLandTime = record->m_sim_time - float(record->m_layers[4].m_playback_rate / record->m_layers[4].m_cycle);
+						bLandedOnServer = flLandTime >= previous->m_sim_time;
+					}
 
-				// fix jump_fall.
-				if ( record->m_layers[ 4 ].m_weight != 1.f && previous->m_layers[ 4 ].m_weight == 1.f && record->m_layers[ 5 ].m_weight != 0.f )
-					m_player->m_fFlags( ) |= FL_ONGROUND;
+					bool bOnGround = record->m_flags & FL_ONGROUND;
 
-				if ( record->m_flags & FL_ONGROUND && !( previous->m_flags & FL_ONGROUND ) )
-					m_player->m_fFlags( ) &= ~FL_ONGROUND;
+					if (bLandedOnServer && !bJumped) {
+						if (flLandTime <= _m_flTime) {
+							bJumped = true;
+							bOnGround = true;
+						}
+						else {
+							bOnGround = previous->m_flags & FL_ONGROUND;
+						}
+					}
+
+					_bOnGround = bOnGround;
+				}
+
+				if (!_bOnGround)
+					m_player->m_fFlags() &= ~FL_ONGROUND;
+				else
+					m_player->m_fFlags() |= FL_ONGROUND;
 
 				// fix crouching players.
 				// the duck amount we receive when people choke is of the last simulation.
@@ -119,85 +208,61 @@ void AimPlayer::UpdateAnimations( LagRecord *record ) {
 
 				// delta in duckamt and delta in time..
 				float duck = record->m_duck - previous->m_duck;
-				float time = record->m_sim_time - previous->m_sim_time;
 
 				// get the duckamt change per tick.
-				float change = ( duck / time ) * g_csgo.m_globals->m_interval;
+				float change = (duck / record->m_lag_time) * g_csgo.m_globals->m_interval;
 
 				// fix crouching players.
-				m_player->m_flDuckAmount( ) = previous->m_duck + change;
-
-			
-			
-
-				if ( !record->m_fake_walk ) {
-					// fix the velocity till the moment of animation.
-					vec3_t velo = record->m_velocity - previous->m_velocity;
-
-					// accel per tick.
-					vec3_t accel = ( velo / time ) * g_csgo.m_globals->m_interval;
-
-					// set the anim velocity to the previous velocity.
-					// and predict one tick ahead.
-					record->m_anim_velocity = previous->m_velocity + accel;
-				}
-
-				if (previous->m_body != record->m_body && record->m_anim_velocity.length_2d() < 25.f && record->m_lag <= 3) {
-					record->m_retard = std::abs(m_player->m_flSimulationTime() - m_last_lby_change) < 0.2f;
-					m_last_lby_change = m_player->m_flSimulationTime();
-				}
-
+				m_player->m_flDuckAmount() = previous->m_duck + change;
 			}
 		}
 	}
 
-	bool fake = !bot && g_menu.main.aimbot.correct.get( );
+	bool fake = !bot && g_menu.main.aimbot.correct.get();
 
 	// if using fake angles, correct angles.
-	if (fake) {
-
+	if (fake)
 		g_resolver.ResolveAngles(m_player, record);
-		g_resolver.PredictBodyUpdates(m_player, record);
-	}
 
 	// set stuff before animating.
-	m_player->m_vecOrigin( ) = record->m_origin;
-	m_player->m_vecVelocity( ) = m_player->m_vecAbsVelocity( ) = record->m_anim_velocity;
-	m_player->m_flLowerBodyYawTarget( ) = record->m_body;
+	m_player->m_vecOrigin() = record->m_origin;
+	//	m_player->m_vecVelocity( ) = m_player->m_vecAbsVelocity( ) = record->m_anim_velocity;
+	m_player->m_flLowerBodyYawTarget() = record->m_body;
 
 	// EFL_DIRTY_ABSVELOCITY
 	// skip call to C_BaseEntity::CalcAbsoluteVelocity
-	m_player->m_iEFlags( ) &= ~0x1000;
+	m_player->m_iEFlags() &= ~0x1000;
 
 	// write potentially resolved angles.
-	m_player->m_angEyeAngles( ) = record->m_eye_angles;
+	m_player->m_angEyeAngles() = record->m_eye_angles;
 
 	// fix animating in same frame.
-	if ( state->m_frame >= g_csgo.m_globals->m_frame )
+	if (state->m_frame >= g_csgo.m_globals->m_frame)
 		state->m_frame -= 1;
 
 	// 'm_animating' returns true if being called from SetupVelocity, passes raw velocity to animstate.
-	m_player->m_bClientSideAnimation( ) = true;
-	m_player->UpdateClientSideAnimation( );
-	m_player->m_bClientSideAnimation( ) = false;
+	m_player->m_bClientSideAnimation() = true;
+	m_player->UpdateClientSideAnimation();
+	m_player->m_bClientSideAnimation() = false;
 
 	// store updated/animated poses and rotation in lagrecord.
-	m_player->GetPoseParameters( record->m_poses );
-	record->m_abs_ang = m_player->GetAbsAngles( );
+	m_player->GetPoseParameters(record->m_poses);
+	record->m_abs_ang = m_player->GetAbsAngles();
 
 	g_bones.BuildBones(m_player, 0x7FF00, record->m_bones, record);
 	record->m_setup = record->m_bones;
 
+
 	// restore backup data.
-	m_player->m_vecOrigin( ) = backup.m_origin;
-	m_player->m_vecVelocity( ) = backup.m_velocity;
-	m_player->m_vecAbsVelocity( ) = backup.m_abs_velocity;
-	m_player->m_fFlags( ) = backup.m_flags;
-	m_player->m_iEFlags( ) = backup.m_eflags;
-	m_player->m_flDuckAmount( ) = backup.m_duck;
-	m_player->m_flLowerBodyYawTarget( ) = backup.m_body;
-	m_player->SetAbsOrigin( backup.m_abs_origin );
-	m_player->SetAnimLayers( backup.m_layers );
+	m_player->m_vecOrigin() = backup.m_origin;
+	m_player->m_vecVelocity() = backup.m_velocity;
+	m_player->m_vecAbsVelocity() = backup.m_abs_velocity;
+	m_player->m_fFlags() = backup.m_flags;
+	m_player->m_iEFlags() = backup.m_eflags;
+	m_player->m_flDuckAmount() = backup.m_duck;
+	m_player->m_flLowerBodyYawTarget() = backup.m_body;
+	m_player->SetAbsOrigin(backup.m_abs_origin);
+	m_player->SetAnimLayers(backup.m_layers);
 
 	// IMPORTANT: do not restore poses here, since we want to preserve them for rendering.
 	// also dont restore the render angles which indicate the model rotation.
@@ -217,6 +282,7 @@ void AimPlayer::OnNetUpdate( Player *player ) {
 		m_body_update = FLT_MAX;
 		m_moved = false;
 		m_records.clear( );
+		m_last_freestand_scan = 0;
 		return;
 	}
 
@@ -225,6 +291,7 @@ void AimPlayer::OnNetUpdate( Player *player ) {
 		player->m_bClientSideAnimation( ) = true;
 		m_body_update = FLT_MAX;
 		m_moved = false;
+		m_last_freestand_scan = 0;
 		return;
 	}
 
@@ -243,6 +310,7 @@ void AimPlayer::OnNetUpdate( Player *player ) {
 		bool insert = true;
 		m_body_update = FLT_MAX;
 		m_moved = false;
+		m_last_freestand_scan = 0;
 
 		// we have any records already?
 		if ( !m_records.empty( ) ) {
@@ -291,11 +359,12 @@ void AimPlayer::OnNetUpdate( Player *player ) {
 		UpdateAnimations( current );
 	}
 
+	
 	if (m_records.front().get() && m_records.front().get()->m_broke_lc) {
 		while (m_records.size() > 3)
 			m_records.pop_back();
 	}
-
+	
 
 	if (m_records.size() > 1) {
 		if (!m_records.back().get()->valid())
@@ -424,10 +493,13 @@ void AimPlayer::SetupHitboxes(LagRecord* record, bool history) {
 		m_hitboxes.push_back({ HITBOX_R_THIGH, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_L_CALF, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_R_CALF, HitscanMode::NORMAL });
+
+	}
+
+	if (ret.get(5)) {
 		m_hitboxes.push_back({ HITBOX_L_FOOT, HitscanMode::NORMAL });
 		m_hitboxes.push_back({ HITBOX_R_FOOT, HitscanMode::NORMAL });
 	}
-
 }
 
 void Aimbot::init( ) {
@@ -456,80 +528,103 @@ void Aimbot::StripAttack( ) {
 		g_cl.m_cmd->m_buttons &= ~IN_ATTACK;
 }
 
-void Aimbot::think( ) {
+void Aimbot::handle_targets() {
+
+	for (int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i) {
+		Player* player = g_csgo.m_entlist->GetClientEntity< Player* >(i);
+
+		if (!IsValidTarget(player))
+			continue;
+
+		AimPlayer* data = &m_players[i - 1];
+		if (!data)
+			continue;
+
+		if (data->m_records.empty())
+			continue;
+
+		m_targets.emplace_back(data);
+	}
+
+	std::sort(m_targets.begin(), m_targets.end(), [&](const AimPlayer* a, const AimPlayer* b) {
+
+		if (g_menu.main.aimbot.selection.get() == 0)
+			return (a->m_records.front().get()->m_pred_origin.dist_to(g_cl.m_shoot_pos) < b->m_records.front().get()->m_pred_origin.dist_to(g_cl.m_shoot_pos));
+		else if (g_menu.main.aimbot.selection.get() == 1)
+			return (math::GetFOV(g_cl.m_view_angles, g_cl.m_shoot_pos, a->m_player->WorldSpaceCenter()) < math::GetFOV(g_cl.m_view_angles, g_cl.m_shoot_pos, b->m_player->WorldSpaceCenter()));
+		else
+			return (a->m_player->m_iHealth() < b->m_player->m_iHealth());
+
+		return false;
+
+		});
+
+
+}
+
+void Aimbot::think() {
 	// do all startup routines.
-	init( );
+	init();
 
 	// sanity.
-	if ( !g_cl.m_weapon )
+	if (!g_cl.m_weapon)
 		return;
 
 	// no grenades or bomb.
-	if ( g_cl.m_weapon_type == WEAPONTYPE_GRENADE || g_cl.m_weapon_type == WEAPONTYPE_C4 )
+	if (g_cl.m_weapon_type == WEAPONTYPE_GRENADE || g_cl.m_weapon_type == WEAPONTYPE_C4)
 		return;
+
 
 	// we have no aimbot enabled.
-	if ( !g_menu.main.aimbot.enable.get( ) )
+	if (!g_menu.main.aimbot.enable.get())
 		return;
-
+	
+#ifndef _DEBUG
 	// animation silent aim, prevent the ticks with the shot in it to become the tick that gets processed.
 	// we can do this by always choking the tick before we are able to shoot.
 	bool revolver = g_cl.m_weapon_id == REVOLVER && g_cl.m_revolver_cock != 0;
 
 	// one tick before being able to shoot.
-	if ( revolver && g_cl.m_revolver_cock > 0 && g_cl.m_revolver_cock == g_cl.m_revolver_query ) {
-		*g_cl.m_packet = false;
+	if (revolver && g_cl.m_revolver_cock > 0 && g_cl.m_revolver_cock == g_cl.m_revolver_query) {
 		return;
 	}
 
 	// we have a normal weapon or a non cocking revolver
 	// choke if its the processing tick.
-	if (g_cl.m_weapon_fire && !g_cl.m_lag && !revolver && !g_tickshift.m_double_tap)
-	{
+	if (g_cl.m_weapon_fire && !g_cl.m_lag && !revolver && !g_tickshift.m_double_tap) {
 		*g_cl.m_packet = false;
 		StripAttack();
 		return;
 	}
 
-	bool auto_ = g_cl.m_weapon_info->m_is_full_auto || g_cl.m_weapon_id == G3SG1 || g_cl.m_weapon_id == SCAR20;
+#endif
 
+
+	bool can_shoot = g_cl.m_weapon_fire; //|| (g_cl.m_weapon->m_flNextPrimaryAttack() <= g_csgo.m_globals->m_curtime - game::TICKS_TO_TIME(14) && g_tickshift.m_double_tap);
+	bool auto_ = g_cl.m_weapon_id == G3SG1 || g_cl.m_weapon_id == SCAR20 || g_cl.m_weapon_info->m_is_full_auto;
 	// no point in aimbotting if we cannot fire this tick.
-	if ( !g_cl.m_weapon_fire && !auto_ )
+	if (!can_shoot && !auto_)
 		return;
 
-	// setup bones for all valid targets.
-	for ( int i{ 1 }; i <= g_csgo.m_globals->m_max_clients; ++i ) {
-		Player *player = g_csgo.m_entlist->GetClientEntity< Player * >( i );
-
-		if ( !IsValidTarget( player ) )
-			continue;
-
-		AimPlayer *data = &m_players[ i - 1 ];
-		if ( !data )
-			continue;
-
-		// store player as potential target this tick.
-		m_targets.emplace_back( data );
-	}
+	// custom target selection stolen from primordial
+	handle_targets();
 
 	// run knifebot.
-	if ( g_cl.m_weapon_type == WEAPONTYPE_KNIFE && g_cl.m_weapon_id != ZEUS ) {
-
-		if ( g_menu.main.aimbot.knifebot.get( ) )
-			knife( );
-
+	if (g_cl.m_weapon_type == WEAPONTYPE_KNIFE && g_cl.m_weapon_id != ZEUS) {
+		knife();
 		return;
 	}
 
 	// scan available targets... if we even have any.
-	find( );
+	find();
 
-	if (!g_cl.m_weapon_fire)
+	if (!can_shoot)
 		StripAttack();
 
 	// finally set data when shooting.
-	apply( );
+	apply();
 }
+
 
 void Aimbot::find() {
 	struct BestTarget_t { Player* player; vec3_t pos; float damage; LagRecord* record; int hitbox; };
@@ -547,9 +642,6 @@ void Aimbot::find() {
 	if (m_targets.empty())
 		return;
 
-	if (g_cl.m_weapon_id == ZEUS && !g_menu.main.aimbot.zeusbot.get())
-		return;
-
 	// iterate all targets.
 	for (const auto& t : m_targets) {
 		if (t->m_records.empty())
@@ -558,7 +650,7 @@ void Aimbot::find() {
 		// this player broke lagcomp.
 		// his bones have been resetup by our lagcomp.
 		// therfore now only the front record is valid.
-		if (g_lagcomp.StartPrediction(t)) {
+		if (g_menu.main.aimbot.lagfix.get() && g_lagcomp.StartPrediction(t)) {
 			LagRecord* front = t->m_records.front().get();
 
 			t->SetupHitboxes(front, false);
@@ -566,7 +658,7 @@ void Aimbot::find() {
 				continue;
 
 			// rip something went wrong..
-			if (t->GetBestAimPosition(tmp_pos, tmp_damage, tmp_hitbox, front) && SelectTarget(front, tmp_pos, tmp_damage)) {
+			if (t->GetBestAimPosition(tmp_pos, tmp_damage, tmp_hitbox, front)) {
 
 				// if we made it so far, set shit.
 				best.player = t->m_player;
@@ -581,16 +673,29 @@ void Aimbot::find() {
 		// player did not break lagcomp.
 		// history aim is possible at this point.
 		else {
+			
+			if (!g_menu.main.aimbot.lagfix.get() && t->m_records.front().get()->m_broke_lc)
+				continue;
+
 			LagRecord* ideal = g_resolver.FindIdealRecord(t);
+
 			if (!ideal)
+				ideal = t->m_records.front().get();
+
+			if (!ideal)
+				continue;
+
+			if (!ideal->valid() || ideal->m_broke_lc)
 				continue;
 
 			t->SetupHitboxes(ideal, false);
 			if (t->m_hitboxes.empty())
 				continue;
 
+			bool hit_ideal = t->GetBestAimPosition(tmp_pos, tmp_damage, tmp_hitbox, ideal);
+
 			// try to select best record as target.
-			if (t->GetBestAimPosition(tmp_pos, tmp_damage, tmp_hitbox, ideal) && SelectTarget(ideal, tmp_pos, tmp_damage)) {
+			if (hit_ideal) {
 				// if we made it so far, set shit.
 				best.player = t->m_player;
 				best.pos = tmp_pos;
@@ -599,10 +704,10 @@ void Aimbot::find() {
 				best.hitbox = tmp_hitbox;
 				break;
 			}
+			
+			LagRecord* last = g_resolver.FindPreLastRecord(t);
 
-			LagRecord* last = t->m_records.back().get();
-
-			if (!last || last == ideal)
+			if (!last  || last == ideal || !last->valid() || last == t->m_records.front().get())
 				continue;
 
 			t->SetupHitboxes(last, true);
@@ -610,7 +715,7 @@ void Aimbot::find() {
 				continue;
 
 			// rip something went wrong..
-			if (t->GetBestAimPosition(tmp_pos, tmp_damage, tmp_hitbox, last) && SelectTarget(last, tmp_pos, tmp_damage)) {
+			if (t->GetBestAimPosition(tmp_pos, tmp_damage, tmp_hitbox, last)) {
 				// if we made it so far, set shit.
 				best.player = t->m_player;
 				best.pos = tmp_pos;
@@ -621,6 +726,9 @@ void Aimbot::find() {
 			}
 		}
 	}
+
+//	if (best.player)
+	//	g_movement.AutoStop();
 
 	// verify our target and set needed data.
 	if (best.player && best.record) {
@@ -634,13 +742,10 @@ void Aimbot::find() {
 		m_record = best.record;
 		m_hitbox = best.hitbox;
 
-		// saves FPS.
-	//	if (m_damage > 0) {
-			// we are on land.
+
+
 		const bool on_land = !(g_cl.m_flags & FL_ONGROUND) && g_cl.m_local->m_fFlags() & FL_ONGROUND;
 
-		// write data, needed for traces / etc.
-		m_record->cache();
 		bool on = g_menu.main.aimbot.hitchance_auto.get() && g_menu.main.config.mode.get() == 0;
 		bool hit = on && CheckHitchance(m_target, m_angle);
 		// set autostop shit.
@@ -649,7 +754,7 @@ void Aimbot::find() {
 			if (!g_input.GetKeyState(g_menu.main.misc.fakewalk.get())) {
 				// set this, if we arent jumping.
 				m_stop = !(g_cl.m_buttons & IN_JUMP);
-				g_movement.AutoStop();
+			
 			}
 		}
 		if (hit) {
@@ -966,7 +1071,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 
 			bool low_fps = g_cl.get_fps() <= 80 && g_menu.main.aimbot.fps.get(1);
 
-			if (multipoint.get(3) && !low_fps) {
+			if (multipoint.get(4) && !low_fps) {
 				// get point offset relative to center point
 				// and factor in hitbox scale.
 				float d2 = (bbox->m_mins.x - center.x) * scale;
@@ -1034,7 +1139,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 		}
 
 		// body has 5 points.
-		else if (index == HITBOX_PELVIS || index == HITBOX_BODY) {
+		else if (index == HITBOX_THORAX || index == HITBOX_PELVIS || index == HITBOX_BODY) {
 
 
 			// back.
@@ -1048,7 +1153,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 		}
 
 		// other stomach/chest hitboxes have 2 points.
-		else if (index == HITBOX_THORAX || index == HITBOX_CHEST) {
+		else if ( index == HITBOX_CHEST) {
 
 
 			// add extra point on back.
@@ -1058,7 +1163,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 
 		else if (index == HITBOX_R_CALF || index == HITBOX_L_CALF) {
 	
-			bool low_fps = g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(2);
+			bool low_fps = g_cl.get_fps() <= 75 && g_menu.main.aimbot.fps.get(2);
 
 			// half bottom.
 			if (multipoint.get(3) && !low_fps)
@@ -1105,8 +1210,16 @@ int Aimbot::FindMindamage() {
 		break;
 	}
 
+	bool dmg = (g_aimbot.damage_override && g_menu.main.aimbot.dmg_override_mode.get() == 1) || (g_menu.main.aimbot.dmg_override_mode.get() == 0 && g_input.GetKeyState(g_menu.main.aimbot.dmg_override.get()));
+
+
+	if (dmg)
+		damage = g_menu.main.aimbot.dmg_override_amount.get();
+
+
 	return damage;
 }
+
 bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagRecord* record) {
 	bool                  done, pen;
 	float                 dmg, pendmg;
@@ -1117,15 +1230,23 @@ bool AimPlayer::GetBestAimPosition(vec3_t& aim, float& damage, int& hitbox, LagR
 	int hp = std::min(100, m_player->m_iHealth());
 
 	if (g_cl.m_weapon_id == ZEUS) {
-		dmg = hp;
+		dmg = hp + 1;
 		pen = false;
 	}
 
 	else {
 		dmg = g_aimbot.FindMindamage();
-		pendmg = dmg;
-		pen = true;
+		pen = g_menu.main.aimbot.penetrate.get();
+
+		if (dmg >= 100)
+			dmg = (dmg - 100) + hp;
 	}
+
+
+	if (g_menu.main.aimbot.scale_dmg.get() && hp < 20)
+		dmg = hp;
+
+
 
 
 	const vec3_t backup_origin = m_player->m_vecOrigin();
@@ -1376,6 +1497,15 @@ bool Aimbot::SelectTarget( LagRecord *record, const vec3_t &aim, float damage ) 
 
 	return false;
 }
+
+bool IsServerNoSpread()
+{
+	// Retrieves convar(s)
+	ConVar* var_nospread = g_csgo.m_cvar->FindVar(HASH("weapon_accuracy_nospread"));
+	// return true if var_nospread IS NOT equal to 0
+	return (var_nospread->GetInt());
+}
+
 void Aimbot::apply() {
 	bool attack, attack2;
 
@@ -1411,12 +1541,9 @@ void Aimbot::apply() {
 		}
 
 		// nospread.
-		if (g_menu.main.aimbot.nospread.get() && g_menu.main.config.mode.get() == 1)
-			NoSpread();
-
-		// norecoil.
-		if (g_menu.main.aimbot.norecoil.get())
+		if (!IsServerNoSpread())
 			g_cl.m_cmd->m_view_angles -= g_cl.m_local->m_aimPunchAngle() * g_csgo.weapon_recoil_scale->GetFloat();
+
 		if (m_target) {
 
 			if (m_record)
@@ -1427,18 +1554,4 @@ void Aimbot::apply() {
 		// set that we fired.
 		g_cl.m_shot = true;
 	}
-}
-
-void Aimbot::NoSpread( ) {
-	bool    attack2;
-	vec3_t  spread, forward, right, up, dir;
-
-	// revolver state.
-	attack2 = ( g_cl.m_weapon_id == REVOLVER && ( g_cl.m_cmd->m_buttons & IN_ATTACK2 ) );
-
-	// get spread.
-	spread = g_cl.m_weapon->CalculateSpread( g_cl.m_cmd->m_random_seed, attack2 );
-
-	// compensate.
-	g_cl.m_cmd->m_view_angles -= { -math::rad_to_deg( std::atan( spread.length_2d( ) ) ), 0.f, math::rad_to_deg( std::atan2( spread.x, spread.y ) ) };
 }

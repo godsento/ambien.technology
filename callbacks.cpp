@@ -603,3 +603,9 @@ bool callbacks::FakeGlowChamsSelection()
 void callbacks::ToggleDoubletap() {
 	g_tickshift.m_double_tap = !g_tickshift.m_double_tap;
 }
+
+void callbacks::ToggleDamage() {
+
+	if (g_menu.main.aimbot.dmg_override_mode.get() == 1)
+		g_aimbot.damage_override = !g_aimbot.damage_override;
+}
