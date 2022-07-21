@@ -61,6 +61,8 @@ public:
 	Dropdown      auto_stop;
 	Checkbox      auto_stop_between;
 
+	Dropdown      hitchance_mode;
+
 	MultiDropdown fps;
 
 public:
@@ -211,6 +213,9 @@ public:
 		hitchance_default.AddShowCallback(callbacks::IsConfigMM);
 		hitchance_default.AddShowCallback(callbacks::IsDefaultSelected);
 		RegisterElement(&hitchance_default, 1);
+
+		hitchance_mode.setup(XOR("hit chance mode"), XOR("hcmode"), { XOR("default"), XOR("experimental") });
+		RegisterElement(&hitchance_mode, 1);
 
 		lagfix.setup( XOR( "predict fake-lag" ), XOR( "lagfix" ) );
 		RegisterElement( &lagfix, 1 );

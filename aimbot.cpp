@@ -763,6 +763,7 @@ bool Aimbot::CheckHitchance( Player *player, const ang_t &angle ) {
 	// store off inaccuracy / spread ( these functions are quite intensive and we only need them once ).
 	inaccuracy = g_cl.m_weapon->GetInaccuracy( );
 	spread = g_cl.m_weapon->GetSpread( );
+	float recoil_index = g_cl.m_weapon->m_flRecoilIndex();
 
 	const vec3_t backup_origin = player->m_vecOrigin();
 	const vec3_t backup_abs_origin = player->GetAbsOrigin();
@@ -781,40 +782,111 @@ bool Aimbot::CheckHitchance( Player *player, const ang_t &angle ) {
 	};
 
 
-	// iterate all possible seeds.
-	for ( int i{ 0 }; i <= SEED_MAX; ++i ) {
-		// get spread.
-		wep_spread = g_cl.m_weapon->CalculateSpread( i, inaccuracy, spread );
+	if (g_menu.main.aimbot.hitchance_mode.get() == 0) {
 
-		// get spread direction.
-		dir = ( fwd + ( right * wep_spread.x ) + ( up * wep_spread.y ) ).normalized( );
+		// iterate all possible seeds.
+		for (int i{ 0 }; i <= SEED_MAX; ++i) {
+			// get spread.
+			wep_spread = g_cl.m_weapon->CalculateSpread(i, inaccuracy, spread);
 
-		// get end of trace.
-		end = start + ( dir * g_cl.m_weapon_info->m_range );
+			// get spread direction.
+			dir = (fwd + (right * wep_spread.x) + (up * wep_spread.y)).normalized();
 
-		player->m_vecOrigin() = m_record->m_pred_origin;
-		player->SetAbsOrigin(m_record->m_pred_origin);
-		player->SetAbsAngles(m_record->m_abs_ang);
-		player->m_vecMins() = m_record->m_mins;
-		player->m_vecMaxs() = m_record->m_maxs;
-		player->m_BoneCache2() = reinterpret_cast<matrix3x4_t**>(m_record->m_bones);
+			// get end of trace.
+			end = start + (dir * g_cl.m_weapon_info->m_range);
 
-		// setup ray and trace.
-		g_csgo.m_engine_trace->ClipRayToEntity( Ray( start, end ), MASK_SHOT, player, &tr );
+			player->m_vecOrigin() = m_record->m_pred_origin;
+			player->SetAbsOrigin(m_record->m_pred_origin);
+			player->SetAbsAngles(m_record->m_abs_ang);
+			player->m_vecMins() = m_record->m_mins;
+			player->m_vecMaxs() = m_record->m_maxs;
+			player->m_BoneCache2() = reinterpret_cast<matrix3x4_t**>(m_record->m_bones);
 
-		restore();
+			// setup ray and trace.
+			g_csgo.m_engine_trace->ClipRayToEntity(Ray(start, end), MASK_SHOT, player, &tr);
 
-		// check if we hit a valid player / hitgroup on the player and increment total hits.
-		if ( tr.m_entity == player && game::IsValidHitgroup( tr.m_hitgroup ) )
-			++total_hits;
+			restore();
 
-		// we made it.
-		if ( total_hits >= needed_hits )
-			return true;
+			// check if we hit a valid player / hitgroup on the player and increment total hits.
+			if (tr.m_entity == player && game::IsValidHitgroup(tr.m_hitgroup))
+				++total_hits;
 
-		// we cant make it anymore.
-		if ( ( SEED_MAX - i + total_hits ) < needed_hits )
-			return false;
+			// we made it.
+			if (total_hits >= needed_hits)
+				return true;
+
+			// we cant make it anymore.
+			if ((SEED_MAX - i + total_hits) < needed_hits)
+				return false;
+		}
+	}
+	else {
+		// iterate all possible seeds.
+		for (int i{ 0 }; i <= SEED_MAX; ++i) {
+			float a = g_csgo.RandomFloat(0.f, 1.f);
+			float b = g_csgo.RandomFloat(0.f, math::pi * 2.f);
+			float c = g_csgo.RandomFloat(0.f, 1.f);
+			float d = g_csgo.RandomFloat(0.f, math::pi * 2.f);
+
+
+			if (g_cl.m_weapon_id == REVOLVER) {
+				a = 1.f - a * a;
+				a = 1.f - c * c;
+			}
+			else if (g_cl.m_weapon_id == NEGEV && recoil_index < 3.0f) {
+				for (int i = 3; i > recoil_index; i--) {
+					a *= a;
+					c *= c;
+				}
+
+				a = 1.0f - a;
+				c = 1.0f - c;
+			}
+
+			float inac = a * inaccuracy;
+			float sir = c * spread;
+
+			vec3_t sirVec((cos(b) * inac) + (cos(d) * sir), (sin(b) * inac) + (sin(d) * sir), 0), direction;
+
+			direction.x = fwd.x + (sirVec.x * right.x) + (sirVec.y * up.x);
+			direction.y = fwd.y + (sirVec.x * right.y) + (sirVec.y * up.y);
+			direction.z = fwd.z + (sirVec.x * right.z) + (sirVec.y * up.z);
+			direction.normalize();
+
+			ang_t viewAnglesSpread;
+			math::VectorAngles(direction, viewAnglesSpread, &up);
+			viewAnglesSpread.normalize();
+
+			vec3_t viewForward;
+			math::AngleVectors(viewAnglesSpread, &viewForward);
+			viewForward.normalized();
+
+			end = start + (viewForward * g_cl.m_weapon_info->m_range);
+
+			player->m_vecOrigin() = m_record->m_pred_origin;
+			player->SetAbsOrigin(m_record->m_pred_origin);
+			player->SetAbsAngles(m_record->m_abs_ang);
+			player->m_vecMins() = m_record->m_mins;
+			player->m_vecMaxs() = m_record->m_maxs;
+			player->m_BoneCache2() = reinterpret_cast<matrix3x4_t**>(m_record->m_bones);
+
+			// setup ray and trace.
+			g_csgo.m_engine_trace->ClipRayToEntity(Ray(start, end), MASK_SHOT, player, &tr);
+
+			restore();
+
+			// check if we hit a valid player / hitgroup on the player and increment total hits.
+			if (tr.m_entity == player && game::IsValidHitgroup(tr.m_hitgroup))
+				++total_hits;
+
+			// we made it.
+			if (total_hits >= needed_hits)
+				return true;
+
+			// we cant make it anymore.
+			if ((SEED_MAX - i + total_hits) < needed_hits)
+				return false;
+		}
 	}
 
 	return false;

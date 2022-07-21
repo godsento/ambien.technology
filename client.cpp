@@ -17,6 +17,7 @@ ulong_t __stdcall Client::init( void* arg ) {
 	// welcome the user.
 	g_notify.add( tfm::format( XOR( "welcome %s\n" ), g_cl.m_user ) );
 
+	g_cl.UnlockHiddenConvars();
 	return 1;
 }
 
@@ -26,11 +27,11 @@ void Client::DrawHUD( ) {
 	Color menu = g_gui.m_color;
 
 
-// background
+	// background
 	render::rect_outlined(m_width - size.m_width - 20, 10, size.m_width + 10, size.m_height + 2, { menu.r(), menu.g(), menu.b(), 90 }, false);
 	render::gradient(m_width - size.m_width - 20, 10, size.m_width + 10, size.m_height + 2, { menu.r(), menu.g(), menu.b(), 90 }, { menu.r(), menu.g(), menu.b(), 20 }, false);
 	
-// text
+	// text
 	render::norm.string(m_width - 15, 10, { 255, 255, 255, 150 }, text, render::ALIGN_RIGHT);
 }
 
@@ -92,6 +93,7 @@ void Client::OnPaint( ) {
 	g_gui.think( );
 }
 
+
 void Client::OnMapload( ) {
 	// store class ids.
 	g_netvars.SetupClassData( );
@@ -108,6 +110,30 @@ void Client::OnMapload( ) {
 	g_skins.load( );
 
 	m_sequences.clear( );
+
+	g_cl.UnlockHiddenConvars();
+
+
+	g_csgo.m_engine->ExecuteClientCmd("r_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("r_dynamic 0");
+	g_csgo.m_engine->ExecuteClientCmd("r_drawtracers_firstperson 0");
+	g_csgo.m_engine->ExecuteClientCmd("r_jiggle_bones 0");
+	g_csgo.m_engine->ExecuteClientCmd("muzzleflash_light 0");
+	g_csgo.m_engine->ExecuteClientCmd("mat_queue_mode 2");
+	g_csgo.m_engine->ExecuteClientCmd("cl_csm_static_prop_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_csm_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_csm_world_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_foot_contact_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_csm_viewmodel_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_csm_rope_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_csm_sprite_shadows 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_threaded_bone_setup 0");
+	g_csgo.m_engine->ExecuteClientCmd("cl_smooth 0");
+	g_csgo.m_engine->ExecuteClientCmd("fps_max 999");
+	g_csgo.m_engine->ExecuteClientCmd("fps_max_menu 999");
+	g_csgo.m_engine->ExecuteClientCmd("cl_forcepreload 1");
+	g_csgo.m_engine->ExecuteClientCmd("r_eyegloss 0");
+	g_csgo.m_engine->ExecuteClientCmd("r_eyemove 0");
 
 	// if the INetChannelInfo pointer has changed, store it for later.
 	g_csgo.m_net = g_csgo.m_engine->GetNetChannelInfo( );
@@ -134,7 +160,7 @@ void Client::StartMove( CUserCmd* cmd ) {
 
 	// store max choke
 	// TODO; 11 -> m_bIsValveDS
-	m_max_lag = ( m_local->m_fFlags( ) & FL_ONGROUND ) ? 16 : 15;
+	m_max_lag = 15;
 	m_lag = g_csgo.m_cl->m_choked_commands;
 	m_lerp = game::GetClientInterpAmount( );
 	m_latency = g_csgo.m_net->GetLatency( INetChannel::FLOW_OUTGOING );
@@ -323,7 +349,7 @@ void Client::DoMove( ) {
 		if (!data->m_records.front().get()->valid())
 			continue;
 
-		if (std::abs(data->m_last_freestand_scan - player->m_flSimulationTime()) > g_cl.get_fps() <= 70 ? 3.f : 1.f)
+		if (std::abs(data->m_last_freestand_scan - player->m_flSimulationTime()) > g_cl.get_fps() <= 90 ? 5.f : 1.1f)
 			g_lagcomp.collect_awall_shit(data);
 	}
 
