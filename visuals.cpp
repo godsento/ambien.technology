@@ -622,6 +622,7 @@ void Visuals::think() {
 	PenetrationCrosshair();
 	Hitmarker();
 	DrawPlantedC4();
+	Indicators();
 	if (g_hvh.man_left || g_hvh.man_right || g_hvh.man_back) {
 		// manual aa
 		int x, y;
