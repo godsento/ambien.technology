@@ -316,12 +316,12 @@ public:
 		yaw.AddShowCallback(callbacks::IsAntiAimModeStand);
 		RegisterElement(&yaw);
 
-		jitter_range.setup("", XOR("jitter_range_stnd"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"°"));
+		jitter_range.setup("", XOR("jitter_range_stnd"), 1.f, 180.f, false, 0, 45.f, 5.f, XOR(L"Â°"));
 		jitter_range.AddShowCallback(callbacks::IsAntiAimModeStand);
 		jitter_range.AddShowCallback(callbacks::IsStandYawJitter);
 		RegisterElement(&jitter_range);
 
-		rot_range.setup("", XOR("rot_range_stnd"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"°"));
+		rot_range.setup("", XOR("rot_range_stnd"), 0.f, 360.f, false, 0, 360.f, 5.f, XOR(L"Â°"));
 		rot_range.AddShowCallback(callbacks::IsAntiAimModeStand);
 		rot_range.AddShowCallback(callbacks::IsStandYawRotate);
 		RegisterElement(&rot_range);
@@ -341,7 +341,7 @@ public:
 		dir_stand.AddShowCallback(callbacks::HasStandYaw);
 		RegisterElement(&dir_stand);
 
-		dir_custom.setup("", XOR("dir_custom_stnd"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		dir_custom.setup("", XOR("dir_custom_stnd"), -180.f, 180.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		dir_custom.AddShowCallback(callbacks::IsAntiAimModeStand);
 		dir_custom.AddShowCallback(callbacks::HasStandYaw);
 		dir_custom.AddShowCallback(callbacks::IsUsingStandCustom);
@@ -352,7 +352,7 @@ public:
 		body_fake.AddShowCallback(callbacks::HasStandYaw);
 		RegisterElement(&body_fake);
 
-		custom_breaker_val.setup("", XOR("custom_breaker_val"), -180.f, 180.f, false, 0, 0.f, 1.f, XOR(L"°"));
+		custom_breaker_val.setup("", XOR("custom_breaker_val"), -180.f, 180.f, false, 0, 0.f, 1.f, XOR(L"Â°"));
 		custom_breaker_val.AddShowCallback(callbacks::IsAntiAimModeStand);
 		custom_breaker_val.AddShowCallback(callbacks::HasStandYaw);
 		custom_breaker_val.AddShowCallback(callbacks::IsUsingCustomBreaker);
@@ -362,7 +362,7 @@ public:
 		dir_distort_range.AddShowCallback(callbacks::IsAntiAimModeStand);
 		RegisterElement(&distortion);
 
-		dir_distort_range.setup("range", XOR("dir_distort_range"), -180.f, 180.f, false, 0, 0.f, 1.f, XOR(L"°"));
+		dir_distort_range.setup("range", XOR("dir_distort_range"), -180.f, 180.f, false, 0, 0.f, 1.f, XOR(L"Â°"));
 		dir_distort_range.AddShowCallback(callbacks::IsAntiAimModeStand);
 		dir_distort_range.AddShowCallback(callbacks::DistortionOn);
 		RegisterElement(&dir_distort_range);
@@ -393,11 +393,11 @@ public:
 		fake_yaw.setup(XOR("fake yaw"), XOR("fake_yaw"), { XOR("off"), XOR("default"), XOR("relative"), XOR("jitter"), XOR("rotate"), XOR("random"), XOR("local view") });
 		RegisterElement(&fake_yaw, 1);
 
-		fake_relative.setup("", XOR("fake_relative"), -90.f, 90.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		fake_relative.setup("", XOR("fake_relative"), -90.f, 90.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		fake_relative.AddShowCallback(callbacks::IsFakeAntiAimRelative);
 		RegisterElement(&fake_relative, 1);
 
-		fake_jitter_range.setup("", XOR("fake_jitter_range"), 1.f, 90.f, false, 0, 0.f, 5.f, XOR(L"°"));
+		fake_jitter_range.setup("", XOR("fake_jitter_range"), 1.f, 90.f, false, 0, 0.f, 5.f, XOR(L"Â°"));
 		fake_jitter_range.AddShowCallback(callbacks::IsFakeAntiAimJitter);
 		RegisterElement(&fake_jitter_range, 1);
 
@@ -781,6 +781,7 @@ public:
 	Keybind       thirdperson;
 	Slider        thirdperson_dist;
 	Slider aspect;
+	Checkbox      keybinds;
 	
 public:
 	void init() {
@@ -842,7 +843,7 @@ public:
 		fov.setup(XOR("override fov"), XOR("fov"));
 		RegisterElement(&fov, 1);
 
-		fov_amt.setup("", XOR("fov_amt"), 60.f, 140.f, false, 0, 90.f, 1.f, XOR(L"°"));
+		fov_amt.setup("", XOR("fov_amt"), 60.f, 140.f, false, 0, 90.f, 1.f, XOR(L"Â°"));
 		RegisterElement(&fov_amt, 1);
 
 		fov_scoped.setup(XOR("override fov when scoped"), XOR("fov_scoped"));
@@ -851,7 +852,7 @@ public:
 		viewmodel_fov.setup(XOR("override viewmodel fov"), XOR("viewmodel_fov"));
 		RegisterElement(&viewmodel_fov, 1);
 
-		viewmodel_fov_amt.setup("", XOR("viewmodel_fov_amt"), 60.f, 140.f, false, 0, 90.f, 1.f, XOR(L"°"));
+		viewmodel_fov_amt.setup("", XOR("viewmodel_fov_amt"), 60.f, 140.f, false, 0, 90.f, 1.f, XOR(L"Â°"));
 		RegisterElement(&viewmodel_fov_amt, 1);
 		aspect.setup(XOR("aspect ratio"), XOR("aspect"), 0.1f, 2, true, 1, 1.3f, 0.1f);
 		RegisterElement(&aspect, 1);
@@ -886,6 +887,9 @@ public:
 
 		thirdperson_dist.setup(XOR(""), XOR("thirdperson_dist"), 0, 300, false, 0, 150, 1.f, XOR(L""));
 		RegisterElement(&thirdperson_dist, 1);
+		
+		keybinds.setup(XOR("keybind list"), XOR("keybindz"));
+		RegisterElement(&keybinds);
 	}
 };
 
