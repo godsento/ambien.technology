@@ -414,15 +414,15 @@ public:
 		RegisterElement(&lag_land, 1);
 
 
-		//lag_exploit.setup(XOR("lag exploit"), XOR("lag_exploit"));
-		//RegisterElement(&lag_exploit, 1);
+		lag_exploit.setup(XOR("lag exploit"), XOR("lag_exploit"));
+		RegisterElement(&lag_exploit, 1);
 		boxhack_breaker.setup(XOR("experimental"), XOR("break_boxhack"));
 		RegisterElement(&boxhack_breaker, 1);
 		fake_flick.setup(XOR("fake flick"), XOR("desync_legs"));
 		fake_flick.SetToggleCallback(callbacks::ToggleDesync);
 		RegisterElement(&fake_flick, 1);
-		//desync_mode.setup("flick mode", XOR("desyncmode"), { XOR("defensive"), XOR("offensive"),XOR("offensive bypass") }, true);
-		//RegisterElement(&desync_mode,1);
+		desync_mode.setup("flick mode", XOR("desyncmode"), { XOR("defensive"), XOR("offensive"),XOR("offensive bypass") }, true);
+		RegisterElement(&desync_mode,1);
 		fake_flick_invert.setup(XOR("invert"), XOR("desync_invert"));
 		fake_flick_invert.SetToggleCallback(callbacks::ToggleDesyncInvert);
 		RegisterElement(&fake_flick_invert, 1);

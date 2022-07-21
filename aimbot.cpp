@@ -749,7 +749,7 @@ bool Aimbot::CheckHitchance( Player *player, const ang_t &angle ) {
 	constexpr float HITCHANCE_MAX = 100.f;
 	int   SEED_MAX = 256;
 
-	if (g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(0))
+	if (g_cl.get_fps() <= 80 && g_menu.main.aimbot.fps.get(0))
 		SEED_MAX = 128.f;
 
 	vec3_t     start{ g_cl.m_shoot_pos }, end, fwd, right, up, dir, wep_spread;
@@ -964,7 +964,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 			// center.
 			points.push_back(center);
 
-			bool low_fps = g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(1);
+			bool low_fps = g_cl.get_fps() <= 80 && g_menu.main.aimbot.fps.get(1);
 
 			if (multipoint.get(3) && !low_fps) {
 				// get point offset relative to center point
@@ -1034,7 +1034,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 		}
 
 		// body has 5 points.
-		else if (index == HITBOX_BODY) {
+		else if (index == HITBOX_PELVIS || index == HITBOX_BODY) {
 
 
 			// back.
@@ -1042,7 +1042,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 				points.push_back({ center.x, bbox->m_maxs.y - br, center.z });
 		}
 
-		else if (index == HITBOX_PELVIS || index == HITBOX_UPPER_CHEST) {
+		else if ( index == HITBOX_UPPER_CHEST) {
 			// back.
 			points.push_back({ center.x, bbox->m_maxs.y - r, center.z });
 		}
@@ -1070,7 +1070,7 @@ bool AimPlayer::SetupHitboxPoints(LagRecord* record, BoneArray* bones, int index
 		else if (index == HITBOX_R_UPPER_ARM || index == HITBOX_L_UPPER_ARM) {
 
 
-			bool low_fps = g_cl.get_fps() <= 70 && g_menu.main.aimbot.fps.get(3);
+			bool low_fps = g_cl.get_fps() <= 90 && g_menu.main.aimbot.fps.get(3);
 
 			// elbow.
 			if (!low_fps)

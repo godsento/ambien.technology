@@ -627,36 +627,7 @@ int LastDelta = 0;
 bool wtfwtfwtf = false;
 ang_t real_viewangles;
 bool is_flicking;
-bool CanHitCustom(vec3_t origin, Player* m_player, int m_index) {
-	AimPlayer* AimPlayer = &g_aimbot.m_players[m_player->index() - 1];
-	LagRecord* front = AimPlayer->m_records.front().get();
-	std::vector< vec3_t > points;
-	if (!AimPlayer->SetupHitboxPoints(front, front->m_bones, m_index, points))
-		return false;
 
-	// iterate points on hitbox.
-	for (const auto& point : points) {
-		penetration::PenetrationInput_t in;
-
-		in.m_damage = 1;
-		in.m_damage_pen = 1;
-		in.m_can_pen = true;
-		in.m_target = m_player;
-		in.m_from = g_cl.m_local;
-		in.m_pos = point;
-
-		penetration::PenetrationOutput_t out;
-		// we can hit p!
-		if (penetration::runcustom(&in, &out, origin)) {
-			return true;
-		}
-	}
-	return false;
-
-}
-bool CanHitPlayer(vec3_t OriginExtr, Player* pPlayerEntity) {
-	return CanHitCustom(OriginExtr, pPlayerEntity, HITBOX_HEAD) || CanHitCustom(OriginExtr, pPlayerEntity, HITBOX_L_FOOT) || CanHitCustom(OriginExtr, pPlayerEntity, HITBOX_R_FOOT) || CanHitCustom(OriginExtr, pPlayerEntity, HITBOX_PELVIS) || CanHitCustom(OriginExtr, pPlayerEntity, HITBOX_CHEST);
-}
 void HVH::AntiAim() {
 	if (g_input.GetKeyState(g_menu.main.antiaim.blackpersonwalk.get())) {
 		g_cl.m_cmd->m_view_angles = g_cl.m_local->m_angEyeAngles();
@@ -825,7 +796,9 @@ void HVH::AntiAim() {
 		// run the real on sendpacket false.
 		if (!*g_cl.m_packet || !*g_cl.m_final_packet) {
 			DoRealAntiAim();
+
 			if (false) { //g_cl.m_charged) {
+				/*
 				bool earlypeek = false;
 				for (int i = 1; i < g_csgo.m_globals->m_max_clients; ++i)
 				{
@@ -846,7 +819,7 @@ void HVH::AntiAim() {
 				if (earlypeek) {
 					//g_cl.m_cmd->m_view_angles.y += 180;
 					//g_cl.m_tick_to_shift = 16;
-				}
+				}*/
 			}
 			//real_viewangles = g_cl.m_cmd->m_view_angles;
 		}
