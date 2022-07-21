@@ -150,6 +150,7 @@ public:
     void DrawHitboxMatrix(LagRecord* record, Color col, float time);
     void DrawBeams();
     void DebugAimbotPoints(Player* player);
+    void Indicators();
 };
 
 extern Visuals g_visuals;
